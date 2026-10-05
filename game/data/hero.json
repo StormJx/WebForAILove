@@ -1,0 +1,16 @@
+{
+  "name": "巡岸卫",
+  "damage": 13,
+  "range": 118,
+  "cooldown": 0.46,
+  "move_speed": 220,
+  "color": "#2f6f7e",
+  "ability": {
+    "name": "断流",
+    "damage": 32,
+    "radius": 82,
+    "cooldown": 8.0,
+    "slow": 0.42,
+    "slow_time": 2.1
+  }
+}

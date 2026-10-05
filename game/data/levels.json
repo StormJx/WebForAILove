@@ -1,0 +1,32 @@
+{
+  "levels": [
+    {
+      "id": "reed_gate",
+      "name": "旧渠水闸",
+      "blurb": "拐角清楚，适合先学会造塔。芦寇走在前面，疾足和壳卒靠后，渠魁只在第五波。",
+      "map": "map.json",
+      "waves": "waves.json"
+    },
+    {
+      "id": "backwater",
+      "name": "回水长弯",
+      "blurb": "水路来回折，疾足从第一波就混进来。建造点离渠更远，一座塔盖不住整段。",
+      "map": "level2_map.json",
+      "waves": "level2_waves.json"
+    },
+    {
+      "id": "narrow_bank",
+      "name": "狭岸连潮",
+      "blurb": "渠贴着岸边走，塔的射程盖住的路更短。敌人更快，开局生命和金币更少。",
+      "map": "level3_map.json",
+      "waves": "level3_waves.json"
+    },
+    {
+      "id": "night_tide",
+      "name": "夜潮总闸",
+      "blurb": "折线又密又长。潮卒又快又结实，漏掉一个扣两条命。第五波的渠魁最厚。",
+      "map": "level4_map.json",
+      "waves": "level4_waves.json"
+    }
+  ]
+}

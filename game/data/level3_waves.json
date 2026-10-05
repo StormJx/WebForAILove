@@ -1,0 +1,56 @@
+{
+  "lives": 16,
+  "gold": 155,
+  "enemies": {
+    "raider": {"name": "芦寇", "hp": 52, "speed": 66, "gold": 7, "radius": 14, "color": "#6d8f55", "leak": 1},
+    "shell": {"name": "壳卒", "hp": 160, "speed": 40, "gold": 13, "radius": 17, "color": "#8d6b45", "leak": 1},
+    "runner": {"name": "疾足", "hp": 34, "speed": 118, "gold": 9, "radius": 12, "color": "#d6c15a", "leak": 1},
+    "boss": {"name": "渠魁", "hp": 980, "speed": 46, "gold": 50, "radius": 22, "color": "#8c4a4a", "leak": 6}
+  },
+  "waves": [
+    {
+      "reward": 60,
+      "tokens": 6,
+      "groups": [
+        {"id": "raider", "count": 8, "gap": 0.55},
+        {"id": "runner", "count": 6, "gap": 0.4}
+      ]
+    },
+    {
+      "reward": 70,
+      "tokens": 7,
+      "groups": [
+        {"id": "shell", "count": 5, "gap": 0.7},
+        {"id": "runner", "count": 8, "gap": 0.35}
+      ]
+    },
+    {
+      "reward": 85,
+      "tokens": 8,
+      "groups": [
+        {"id": "shell", "count": 6, "gap": 0.65},
+        {"id": "raider", "count": 10, "gap": 0.42},
+        {"id": "runner", "count": 4, "gap": 0.35}
+      ]
+    },
+    {
+      "reward": 100,
+      "tokens": 9,
+      "groups": [
+        {"id": "runner", "count": 12, "gap": 0.32},
+        {"id": "shell", "count": 6, "gap": 0.7},
+        {"id": "raider", "count": 6, "gap": 0.4}
+      ]
+    },
+    {
+      "reward": 120,
+      "tokens": 14,
+      "groups": [
+        {"id": "shell", "count": 6, "gap": 0.6},
+        {"id": "boss", "count": 1, "gap": 0.3},
+        {"id": "runner", "count": 10, "gap": 0.3},
+        {"id": "raider", "count": 8, "gap": 0.4}
+      ]
+    }
+  ]
+}
