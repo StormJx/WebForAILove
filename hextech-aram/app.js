@@ -44,7 +44,7 @@
   const mapNote = data.meta.maps.join("、");
   document.getElementById("lede").textContent =
     "补丁 " + data.meta.patch + "，" + data.meta.fetchedAt + " 抓取自 " + data.meta.sourceName +
-    "。海克斯和出装都来自这个来源，三张地图合在一起，站点未按单张地图拆开，也没有标成国服。选定英雄后可以切到装备。出装来源没有购买顺序。";
+    "。海克斯和英雄整体胜率来自这个来源，三张地图合在一起，站点未按单张地图拆开，也没有标成国服。装备页是另一来源，写的是普通极地大乱斗，不是海克斯乱斗。";
 
   const ageDays = (Date.now() - Date.parse(data.meta.fetchedAt + "T00:00:00Z")) / 86400000;
   if (ageDays > data.meta.staleAfterDays) {
@@ -117,7 +117,7 @@
         button.setAttribute("aria-selected", button.dataset.pane === pane ? "true" : "false");
       });
       if (pane === "items") {
-        hintEl.textContent = champ.title + " · " + champ.given + " 的装备。来源没有出装顺序，只有这一套。";
+        hintEl.textContent = champ.title + " · " + champ.given + " 的装备。普通极地大乱斗，不是海克斯乱斗。只有这一套。";
         renderBuild(champ);
         return;
       }
@@ -160,37 +160,28 @@
     }
     const build = pack.champions[champ.key];
     const meta = pack.meta;
-    const boots = build && build.boots ? build.boots : [];
-    const core = build && build.core ? build.core : [];
-    const swaps = build && build.swaps ? build.swaps : [];
-    if (!build || (!boots.length && !core.length && !swaps.length)) {
-      listEl.innerHTML = '<div class="empty-state"><strong>暂无数据</strong><p>这个英雄没有可核对的海克斯大乱斗出装。这里不用普通极地大乱斗、召唤师峡谷或斗魂竞技场来填。</p></div>';
+    const steps = build && build.steps ? build.steps : [];
+    if (!build || !steps.length) {
+      listEl.innerHTML = '<div class="empty-state"><strong>暂无数据</strong><p>这个英雄在普通极地大乱斗页面里没有出装顺序。</p></div>';
       return;
     }
-    const boot = boots[0];
-    const bootAlts = boots.slice(1);
     listEl.innerHTML =
       '<article class="build">' +
-      '<p class="build-warn">' + esc(meta.orderNote) + "。这里不把单件排成第一件、第二件。</p>" +
-      '<p class="build-scope">补丁 ' + esc(meta.patch) + "，" + esc(meta.fetchedAt) + " 抓取自 " + esc(meta.sourceName) +
-      "。" + esc(meta.mapsNote) + "。" + esc(meta.region) + "。</p>" +
+      '<p class="build-warn">' + esc(meta.modeLabel) + "</p>" +
+      '<p class="build-scope">来源 ' + esc(meta.sourceName) + "，补丁 " + esc(meta.patch) + "，" + esc(meta.fetchedAt) +
+      " 打开。这套是页面选中的 " + esc(build.title) + "，样本 " + esc(build.gamesText) + " 场，页面标的胜率 " + esc(build.winText) +
+      "。" + esc(meta.mapNote) + "，" + esc(meta.region) + "。</p>" +
       "<h3>这一套</h3>" +
-      (boot
-        ? '<section class="slot"><p class="slot-label">鞋子 · 这一件</p><p class="build-sub">主选是选取率最高的一只。其他鞋写在同一件下面，不是另一套，也不是购买顺序。</p>' +
-          itemLine(boot) +
-          (bootAlts.length ? '<p class="slot-label">这一件还可以换</p>' + bootAlts.map(itemLine).join("") : "") +
-          "</section>"
-        : "") +
-      '<h3>常出的单件</h3><p class="build-sub">按选取率从高到低。每一行是这件装备自己的胜率，不是先买哪件。</p>' +
-      core.map(itemLine).join("") +
-      '<h3>可换进这套的高胜率单件</h3><p class="build-sub">集中写在这里，仍然算同一套，不拆成第二套。' + esc(meta.bestNote) + "。按胜率从高到低，同样不是购买顺序。已经出现在上面的不重复列。</p>" +
-      (swaps.length ? swaps.map(itemLine).join("") : '<p class="build-sub">没有额外的高胜率单件。</p>') +
+      '<p class="build-sub">顺序写到页面的 Build Order 结束。来源没有再写后面的件数，这里不补。这一套每一件页面只给了一个选项。</p>' +
+      steps.map(function (step, index) {
+        return '<div class="step"><span class="step-no">' + pieceLabel(index) + "</span><b>" + esc(step.zh) + "</b></div>";
+      }).join("") +
       "</article>";
   }
 
-  function itemLine(item) {
-    return '<div class="item-line"><b>' + esc(item.zh) + '</b><span class="win">' + pct(item.win) +
-      '</span><span>选取 ' + pct(item.pick) + "</span></div>";
+  function pieceLabel(index) {
+    const names = ["第一件", "第二件", "第三件", "第四件", "第五件", "第六件", "第七件", "第八件", "第九件", "第十件", "第十一件", "第十二件"];
+    return names[index] || ("第" + (index + 1) + "件");
   }
 
   function renderRows(rows, showChamp) {

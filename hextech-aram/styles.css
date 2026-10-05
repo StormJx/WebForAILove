@@ -270,6 +270,16 @@ dialog::backdrop { background: rgba(28, 25, 21, 0.46); }
   border-bottom: 1px solid var(--line);
 }
 .slot .item-line { border-bottom-color: #c9e6d6; }
+.step {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.step-no { font-weight: 750; color: var(--accent); }
+.step b { font-size: 16px; }
 .item-line b { font-size: 15px; }
 .item-line .win { font-weight: 750; font-variant-numeric: tabular-nums; }
 .item-line span:last-child { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
