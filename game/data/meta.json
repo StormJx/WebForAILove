@@ -1,0 +1,32 @@
+{
+  "upgrades": [
+    {
+      "id": "rations",
+      "name": "备粮",
+      "blurb": "下一局开局额外金币",
+      "levels": [
+        {"cost": 8, "gold": 30},
+        {"cost": 12, "gold": 30},
+        {"cost": 18, "gold": 40}
+      ]
+    },
+    {
+      "id": "wall",
+      "name": "壁垒",
+      "blurb": "下一局开局额外生命",
+      "levels": [
+        {"cost": 10, "lives": 2},
+        {"cost": 16, "lives": 2}
+      ]
+    },
+    {
+      "id": "hone",
+      "name": "磨刃",
+      "blurb": "下一局巡岸卫伤害提高",
+      "levels": [
+        {"cost": 10, "hero_damage": 0.18},
+        {"cost": 16, "hero_damage": 0.18}
+      ]
+    }
+  ]
+}
