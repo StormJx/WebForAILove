@@ -61,7 +61,7 @@
     render();
   });
   picksEl.addEventListener("click", (event) => {
-    const button = event.target.closest(".pick");
+    const button = event.target.closest("button.pick");
     if (!button) return;
     pickedKey = button.dataset.key;
     render();
@@ -89,12 +89,8 @@
 
     const champHits = matchChampions(query);
     if (champHits.length > 1 && !pickedKey) {
-      hintEl.textContent = "这个简称对上 " + champHits.length + " 个英雄，点一个看他的海克斯。";
-      picksEl.innerHTML = champHits.map((champ) => (
-        '<button type="button" class="pick" data-key="' + esc(champ.key) + '">' +
-        "<b>" + esc(champ.title) + " · " + esc(champ.given) + "</b>" +
-        "<span>" + pct(champ.winRate) + "</span></button>"
-      )).join("");
+      hintEl.textContent = "这个简称对上 " + champHits.length + " 个英雄。点之前先看整体胜率：绿标是超过 50%，灰标是未超过 50%。";
+      picksEl.innerHTML = champHits.map(pickButton).join("");
       listEl.innerHTML = "";
       return;
     }
@@ -102,11 +98,11 @@
     const champ = champHits.length === 1 ? champHits[0] : champs[pickedKey];
     if (champ && champHits.some((item) => item.key === champ.key)) {
       const rows = (byChamp[champ.key] || []).slice(0, 10);
-      hintEl.textContent = champ.title + " · " + champ.given + "，胜率前 " + rows.length + " 个海克斯。";
-      if (champHits.length > 1) {
-        picksEl.innerHTML = '<button type="button" class="pick" data-key="">' +
-          "<b>换一个英雄</b><span>" + champHits.length + " 个对上简称</span></button>";
-      }
+      const band = window.HEX_MATCH.band(champ);
+      hintEl.textContent = champ.title + " · " + champ.given + " 整体胜率 " + rateText(champ) + "，" + window.HEX_MATCH.label(band) + "。下面是海克斯胜率前 " + rows.length + "。";
+      picksEl.innerHTML = (champHits.length > 1
+        ? '<button type="button" class="pick" data-key=""><b>换一个英雄</b><span>' + champHits.length + " 个对上简称</span></button>"
+        : "") + champStatus(champ);
       current = rows;
       renderRows(rows, false);
       return;
@@ -153,21 +149,31 @@
   }
 
   function matchChampions(query) {
-    return data.champions
-      .map((champ) => ({ champ, rank: championRank(champ, query) }))
-      .filter((item) => item.rank >= 0)
-      .sort((a, b) => a.rank - b.rank || b.champ.winRate - a.champ.winRate)
-      .map((item) => item.champ);
+    return window.HEX_MATCH.champions(data, pinyin, query);
   }
 
-  function championRank(champ, query) {
-    const py = pinyin.champions[champ.key];
-    if (!py) return -1;
-    if (py.givenInit === query || py.givenFull === query || champ.given.toLowerCase() === query) return 0;
-    if (py.titleInit === query || py.titleFull === query || champ.title.toLowerCase() === query) return 1;
-    if (py.en === query || py.enInit === query || champ.key === query) return 2;
-    const keys = [py.givenInit, py.givenFull, py.titleInit, py.titleFull, py.en, py.enInit, champ.key, champ.given.toLowerCase(), champ.title.toLowerCase()];
-    return keys.some((key) => key && key.startsWith(query)) ? 3 : -1;
+  function pickButton(champ) {
+    const band = window.HEX_MATCH.band(champ);
+    return '<button type="button" class="pick ' + band + '" data-key="' + esc(champ.key) + '">' +
+      "<b>" + esc(champ.title) + " · " + esc(champ.given) + "</b>" +
+      bandMark(champ) + "</button>";
+  }
+
+  function champStatus(champ) {
+    const band = window.HEX_MATCH.band(champ);
+    return '<div class="champ-line ' + band + '">' +
+      "<b>" + esc(champ.title) + " · " + esc(champ.given) + "</b>" +
+      bandMark(champ) + "</div>";
+  }
+
+  function bandMark(champ) {
+    const band = window.HEX_MATCH.band(champ);
+    const rate = band === "none" ? "没有数据" : pct(champ.winRate);
+    return '<span class="band">' + esc(window.HEX_MATCH.label(band)) + "<strong>" + rate + "</strong></span>";
+  }
+
+  function rateText(champ) {
+    return window.HEX_MATCH.band(champ) === "none" ? "没有数据" : pct(champ.winRate);
   }
 
   function matchAugments(query) {
