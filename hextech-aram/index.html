@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>海克斯乱斗组合参考</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="top">
+    <p class="eyebrow">极地大乱斗 · 海克斯乱斗</p>
+    <h1>英雄 + 海克斯组合</h1>
+    <p class="lede" id="lede">正在读取本地数据…</p>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <div class="banner" id="stale-banner" hidden></div>
+
+  <section class="panel controls" aria-label="筛选">
+    <label class="search">
+      <span>搜索英雄或海克斯</span>
+      <input id="q" type="search" placeholder="例如 亚索、疾风剑豪、亮出你的剑" autocomplete="off" enterkeyhint="search" />
+    </label>
+    <div class="filters">
+      <label>
+        <span>排序</span>
+        <select id="sort">
+          <option value="win-desc">胜率从高到低</option>
+          <option value="win-asc">胜率从低到高</option>
+          <option value="delta-desc">强度差从高到低</option>
+          <option value="delta-asc">强度差从低到高</option>
+          <option value="games-desc">样本量从高到低</option>
+        </select>
+      </label>
+      <label>
+        <span>稀有度</span>
+        <select id="rarity">
+          <option value="">全部</option>
+          <option value="Prismatic">棱彩阶</option>
+          <option value="Gold">黄金阶</option>
+          <option value="Silver">白银阶</option>
+        </select>
+      </label>
+      <label>
+        <span>英雄梯度</span>
+        <select id="tier">
+          <option value="">全部</option>
+          <option>S</option>
+          <option>A</option>
+          <option>B</option>
+          <option>C</option>
+          <option>D</option>
+        </select>
+      </label>
+      <label>
+        <span>数据</span>
+        <select id="status">
+          <option value="ok">有胜率</option>
+          <option value="no-data">暂无数据</option>
+          <option value="all">全部</option>
+        </select>
+      </label>
+      <label>
+        <span>最少样本量</span>
+        <input id="min-games" type="number" min="0" step="50" value="100" inputmode="numeric" />
+      </label>
+      <button type="button" id="reset" class="ghost">清空筛选</button>
+    </div>
+    <p class="hint" id="hint"></p>
+  </section>
+
+  <p class="count" id="count" aria-live="polite"></p>
+  <div id="list" class="list"></div>
+  <p class="pager"><button type="button" id="more" hidden>再看 30 条</button></p>
+
+  <section class="panel sources" id="sources">
+    <h2>数据来源</h2>
+    <div id="source-list"></div>
+  </section>
+
+  <dialog id="detail">
+    <button type="button" id="close" class="close" aria-label="关闭">关闭</button>
+    <div id="detail-body"></div>
+  </dialog>
+
+  <noscript>需要启用 JavaScript。数据在同一目录的 data.js 里，不访问网络。</noscript>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,2 +1,7 @@
 # WebForAILove
-A test Website for friends by cursor
+
+## 海克斯乱斗组合参考
+
+用浏览器打开 `hextech-aram/index.html`（双击或把文件拖进浏览器即可，不需要服务器）。
+
+页面按英雄、海克斯搜索，可筛选稀有度和英雄梯度，并按胜率或强度差排序。胜率、样本量和强度差只来自 2026-10-05 抓取的 Mayhem:Meta 补丁 26.19 页面。来源没给出的组合显示「暂无数据」。
