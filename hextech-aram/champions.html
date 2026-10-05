@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>海克斯乱斗英雄胜率</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="page-champs">
+  <header class="top">
+    <p class="eyebrow">选英雄</p>
+    <h1>谁的整体胜率超过 50%</h1>
+    <p class="nav"><a href="index.html">回去选海克斯</a></p>
+    <p class="lede" id="lede">正在读取本地数据…</p>
+  </header>
+
+  <section class="panel controls" aria-label="搜索英雄">
+    <label class="search">
+      <span>英雄</span>
+      <input id="q" type="search" placeholder="亚索 / ys / jfjh / 娜美 / nm" autocomplete="off" enterkeyhint="search" />
+    </label>
+    <p class="hint" id="hint"></p>
+  </section>
+
+  <div class="columns">
+    <section class="column over" aria-labelledby="over-title">
+      <h2 id="over-title">超过 50%</h2>
+      <div id="over" class="hero-list"></div>
+    </section>
+    <section class="column under" aria-labelledby="under-title">
+      <h2 id="under-title">未超过 50%</h2>
+      <div id="under" class="hero-list"></div>
+    </section>
+  </div>
+  <section class="nodata" aria-labelledby="none-title">
+    <h2 id="none-title">没有数据</h2>
+    <div id="none" class="hero-list"></div>
+  </section>
+
+  <script src="data.js"></script>
+  <script src="pinyin.js"></script>
+  <script src="champ-search.js"></script>
+  <script src="champions.js"></script>
+</body>
+</html>
