@@ -13,7 +13,9 @@ signal shop_pressed
 signal shop_closed
 signal meta_buy(upgrade_id: String)
 signal restart_pressed
-signal camp_pressed
+signal select_pressed
+signal next_pressed
+signal level_pressed(index: int)
 
 var _lives: Label
 var _gold: Label
@@ -28,12 +30,18 @@ var _sell: Button
 var _ability: Button
 var _wave_button: Button
 var _camp: Control
+var _select: Control
 var _shop: Control
 var _result: Control
+var _camp_title: Label
 var _camp_body: Label
+var _select_body: Label
 var _result_title: Label
 var _result_body: Label
+var _next: Button
 var _shop_rows: Dictionary = {}
+var _level_buttons: Array[Button] = []
+var _safe_margins: Array[MarginContainer] = []
 
 
 func build(catalog: GameCatalog) -> void:
@@ -66,22 +74,31 @@ func build(catalog: GameCatalog) -> void:
 	column.add_child(_make_bottom(catalog))
 
 	_camp = _make_camp()
+	_select = _make_select()
 	_shop = _make_shop(catalog)
 	_result = _make_result()
 	root.add_child(_camp)
+	root.add_child(_select)
 	root.add_child(_shop)
 	root.add_child(_result)
+	_camp.hide()
 	_shop.hide()
 	_result.hide()
 
 
 func apply_insets(left: int, top: int, right: int, bottom: int) -> void:
-	if _margin == null:
+	_apply_margin(_margin, left, top, right, bottom)
+	for margin in _safe_margins:
+		_apply_margin(margin, left, top, right, bottom)
+
+
+func _apply_margin(margin: MarginContainer, left: int, top: int, right: int, bottom: int) -> void:
+	if margin == null:
 		return
-	_margin.add_theme_constant_override("margin_left", left)
-	_margin.add_theme_constant_override("margin_top", top)
-	_margin.add_theme_constant_override("margin_right", right)
-	_margin.add_theme_constant_override("margin_bottom", bottom)
+	margin.add_theme_constant_override("margin_left", left)
+	margin.add_theme_constant_override("margin_top", top)
+	margin.add_theme_constant_override("margin_right", right)
+	margin.add_theme_constant_override("margin_bottom", bottom)
 
 
 func refresh(state: Dictionary) -> void:
@@ -106,13 +123,28 @@ func refresh(state: Dictionary) -> void:
 	_ability.disabled = not bool(state["ability_enabled"])
 	_wave_button.text = str(state["wave_text"])
 	_wave_button.disabled = not bool(state["wave_enabled"])
+	_camp_title.text = str(state["camp_title"])
 	_camp_body.text = str(state["camp_body"])
+	_select_body.text = str(state["select_body"])
 	_result_title.text = str(state["result_title"])
 	_result_body.text = str(state["result_body"])
+	_next.text = str(state["next_text"])
+	_next.disabled = not bool(state["next_enabled"])
 	_refresh_shop(state["shop"])
-	_camp.visible = str(state["modal"]) == "camp"
-	_shop.visible = str(state["modal"]) == "shop"
-	_result.visible = str(state["modal"]) == "result"
+	_refresh_levels(state["levels"])
+	var modal := str(state["modal"])
+	_camp.visible = modal == "camp"
+	_select.visible = modal == "select"
+	_shop.visible = modal == "shop"
+	_result.visible = modal == "result"
+
+
+func _refresh_levels(rows: Array) -> void:
+	for i in _level_buttons.size():
+		if i >= rows.size():
+			break
+		_level_buttons[i].text = str(rows[i]["text"])
+		_level_buttons[i].disabled = not bool(rows[i]["enabled"])
 
 
 func _refresh_shop(rows: Array) -> void:
@@ -214,27 +246,58 @@ func _make_bottom(catalog: GameCatalog) -> PanelContainer:
 	return panel
 
 
-func _make_camp() -> Control:
-	var overlay := _overlay()
-	var panel := _card(overlay)
-	var title := _label("芦岸戍卫", 28)
+func _make_select() -> Control:
+	var overlay := _overlay(0.45)
+	var sheet := _sheet(overlay)
+	var title := _label("选择关隘", 28)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	panel.add_child(title)
+	sheet.add_child(title)
+	_select_body = _label("", 15)
+	_select_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sheet.add_child(_select_body)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	sheet.add_child(row)
+	for index in 4:
+		var button := Button.new()
+		UiStyle.style_button(button, Color("31443a"))
+		button.custom_minimum_size = Vector2(140, 64)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var level_index := index
+		button.pressed.connect(func() -> void: level_pressed.emit(level_index))
+		row.add_child(button)
+		_level_buttons.append(button)
+	var shop := _small_button("研究所")
+	shop.custom_minimum_size = Vector2(140, 48)
+	shop.pressed.connect(func() -> void: shop_pressed.emit())
+	sheet.add_child(shop)
+	return overlay
+
+
+func _make_camp() -> Control:
+	var overlay := _overlay(0.5)
+	var sheet := _sheet(overlay)
+	_camp_title = _label("芦岸戍卫", 26)
+	_camp_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sheet.add_child(_camp_title)
 	_camp_body = _label("", 15)
 	_camp_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_camp_body.custom_minimum_size = Vector2(420, 0)
-	panel.add_child(_camp_body)
+	sheet.add_child(_camp_body)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 8)
-	panel.add_child(row)
+	sheet.add_child(row)
 	var start := _small_button("开始守闸")
 	start.custom_minimum_size = Vector2(140, 52)
 	start.pressed.connect(func() -> void: start_pressed.emit())
+	var back := _small_button("返回选关")
+	back.custom_minimum_size = Vector2(140, 52)
+	back.pressed.connect(func() -> void: select_pressed.emit())
 	var shop := _small_button("研究所")
 	shop.custom_minimum_size = Vector2(120, 52)
 	shop.pressed.connect(func() -> void: shop_pressed.emit())
 	row.add_child(start)
+	row.add_child(back)
 	row.add_child(shop)
 	return overlay
 
@@ -269,40 +332,69 @@ func _make_shop(catalog: GameCatalog) -> Control:
 
 
 func _make_result() -> Control:
-	var overlay := _overlay()
-	var panel := _card(overlay)
-	_result_title = _label("", 28)
+	var overlay := _overlay(0.55)
+	var sheet := _sheet(overlay)
+	_result_title = _label("", 26)
 	_result_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	panel.add_child(_result_title)
+	sheet.add_child(_result_title)
 	_result_body = _label("", 15)
 	_result_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_result_body.custom_minimum_size = Vector2(420, 0)
-	panel.add_child(_result_body)
+	sheet.add_child(_result_body)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 8)
-	panel.add_child(row)
+	sheet.add_child(row)
 	var again := _small_button("再守一次")
 	again.custom_minimum_size = Vector2(120, 52)
+	again.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	again.pressed.connect(func() -> void: restart_pressed.emit())
-	var camp := _small_button("回到营地")
-	camp.custom_minimum_size = Vector2(120, 52)
-	camp.pressed.connect(func() -> void: camp_pressed.emit())
+	_next = _small_button("下一关")
+	_next.custom_minimum_size = Vector2(120, 52)
+	_next.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_next.pressed.connect(func() -> void: next_pressed.emit())
+	var back := _small_button("回到选关")
+	back.custom_minimum_size = Vector2(120, 52)
+	back.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	back.pressed.connect(func() -> void: select_pressed.emit())
 	var shop := _small_button("研究所")
-	shop.custom_minimum_size = Vector2(120, 52)
+	shop.custom_minimum_size = Vector2(110, 52)
+	shop.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	shop.pressed.connect(func() -> void: shop_pressed.emit())
 	row.add_child(again)
-	row.add_child(camp)
+	row.add_child(_next)
+	row.add_child(back)
 	row.add_child(shop)
 	return overlay
 
 
-func _overlay() -> Control:
+func _overlay(alpha: float = 0.62) -> Control:
 	var dim := ColorRect.new()
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	dim.color = Color(0.04, 0.05, 0.04, 0.62)
+	dim.color = Color(0.04, 0.05, 0.04, alpha)
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	return dim
+
+
+func _sheet(overlay: Control) -> VBoxContainer:
+	var margin := MarginContainer.new()
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(margin)
+	_safe_margins.append(margin)
+	var column := VBoxContainer.new()
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.alignment = BoxContainer.ALIGNMENT_END
+	column.add_theme_constant_override("separation", 8)
+	margin.add_child(column)
+	var panel := PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	panel.add_theme_stylebox_override("panel", UiStyle.flat(Color(0.11, 0.15, 0.12, 0.96), Color(0.62, 0.54, 0.32), 14))
+	column.add_child(panel)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	panel.add_child(box)
+	return box
 
 
 func _card(overlay: Control) -> VBoxContainer:

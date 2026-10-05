@@ -3,12 +3,13 @@ extends Node
 const STATE_CAMP := 0
 const STATE_BATTLE := 1
 const STATE_RESULT := 2
+const STATE_SELECT := 3
 
 const ENEMY_SCENE := preload("res://scenes/enemy.tscn")
 const TOWER_SCENE := preload("res://scenes/tower.tscn")
 const HERO_SCENE := preload("res://scenes/hero.tscn")
 
-var state := STATE_CAMP
+var state := STATE_SELECT
 var catalog: GameCatalog
 var save: SaveStore
 var gold := 0
@@ -30,6 +31,7 @@ var fx: Node2D
 var hero: Warden
 var spawner: WaveSpawner
 var hud: Hud
+var map_view: MapView
 var spot_nodes: Array[BuildSpot] = []
 var _top_bar := 52.0
 var _bottom_bar := 168.0
@@ -38,6 +40,8 @@ var _bottom_bar := 168.0
 func _ready() -> void:
 	catalog = GameCatalog.load_all()
 	save = SaveStore.load_file()
+	if catalog.stages.size() > 0:
+		save.migrate_legacy(str(catalog.stages[0]["id"]))
 	_build_world()
 	_build_hud()
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -46,7 +50,7 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 	get_tree().create_timer(0.4).timeout.connect(_layout)
-	note = "点「开始守闸」。"
+	note = "先选一关。第 1 关已经打开。"
 	hud.refresh(ui_state())
 
 
@@ -62,7 +66,7 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if shop_open or state == STATE_CAMP or state == STATE_RESULT:
+	if shop_open or state == STATE_CAMP or state == STATE_RESULT or state == STATE_SELECT:
 		return
 	if event is InputEventMouseButton:
 		var mouse := event as InputEventMouseButton
@@ -108,14 +112,41 @@ func start_battle() -> void:
 	_refresh_selection_visuals()
 
 
-func return_to_camp() -> void:
-	_wipe_field()
+func enter_stage(index: int) -> bool:
+	if index < 0 or index >= catalog.stages.size():
+		return false
+	if not save.is_unlocked(index, catalog.stage_ids()):
+		_set_note("先守住上一关。")
+		return false
+	catalog.apply_stage(index)
+	_rebuild_lane()
 	state = STATE_CAMP
+	shop_open = false
+	selected = -1
+	result_win = false
+	get_tree().paused = false
+	_layout()
+	_set_note("这一关是%s。" % catalog.stage_name)
+	return true
+
+
+func return_to_select() -> void:
+	_wipe_field()
+	state = STATE_SELECT
 	shop_open = false
 	selected = -1
 	get_tree().paused = false
 	_refresh_selection_visuals()
-	_set_note("已回到营地。")
+	_set_note("回到选关。通关会打开下一关。")
+
+
+func go_next_stage() -> void:
+	var nxt := catalog.stage_index + 1
+	if nxt >= catalog.stages.size():
+		_set_note("四关都在这里了。")
+		return
+	if not enter_stage(nxt):
+		_set_note("下一关还锁着。")
 
 
 func try_build(index: int, tower_key: String) -> bool:
@@ -269,13 +300,18 @@ func ui_state() -> Dictionary:
 	var modal := ""
 	if shop_open:
 		modal = "shop"
+	elif state == STATE_SELECT:
+		modal = "select"
 	elif state == STATE_CAMP:
 		modal = "camp"
 	elif state == STATE_RESULT:
 		modal = "result"
+	var show_run := state == STATE_BATTLE or state == STATE_RESULT
+	var bonus := GameCatalog.bonuses(save, catalog)
+	var next_ok := result_win and catalog.stage_index + 1 < catalog.stages.size() and save.is_unlocked(catalog.stage_index + 1, catalog.stage_ids())
 	return {
-		"lives": lives if state != STATE_CAMP else int(catalog.rules["lives"]) + int(GameCatalog.bonuses(save, catalog)["lives"]),
-		"gold": gold if state != STATE_CAMP else int(catalog.rules["gold"]) + int(GameCatalog.bonuses(save, catalog)["gold"]),
+		"lives": lives if show_run else int(catalog.rules["lives"]) + int(bonus["lives"]),
+		"gold": gold if show_run else int(catalog.rules["gold"]) + int(bonus["gold"]),
 		"wave": _wave_label(),
 		"tokens": save.tokens,
 		"hint": _hint_text(),
@@ -288,9 +324,14 @@ func ui_state() -> Dictionary:
 		"ability_enabled": state == STATE_BATTLE and not shop_open and not get_tree().paused and hero.ability_left <= 0.0,
 		"wave_text": _wave_button_text(),
 		"wave_enabled": state == STATE_BATTLE and not shop_open and not get_tree().paused and not spawner.busy and wave_resolved and wave_index < catalog.waves.size(),
+		"camp_title": catalog.stage_name,
 		"camp_body": _camp_text(),
-		"result_title": "水闸保住了" if result_win else "闸门失守",
+		"select_body": _select_text(),
+		"result_title": "%s守住了" % catalog.stage_name if result_win else "%s失守" % catalog.stage_name,
 		"result_body": _result_text(),
+		"next_text": "下一关" if catalog.stage_index + 1 < catalog.stages.size() else "已是末关",
+		"next_enabled": next_ok,
+		"levels": _level_rows(),
 		"shop": _shop_rows(),
 		"modal": modal,
 	}
@@ -300,10 +341,10 @@ func _build_world() -> void:
 	world = Node2D.new()
 	world.name = "World"
 	add_child(world)
-	var map := MapView.new()
-	map.name = "Map"
-	map.setup(catalog, UiStyle.font())
-	world.add_child(map)
+	map_view = MapView.new()
+	map_view.name = "Map"
+	map_view.setup(catalog, UiStyle.font())
+	world.add_child(map_view)
 	path = Path2D.new()
 	path.name = "Path"
 	path.z_index = 8
@@ -356,7 +397,9 @@ func _build_hud() -> void:
 	hud.shop_closed.connect(close_shop)
 	hud.meta_buy.connect(buy_meta)
 	hud.restart_pressed.connect(start_battle)
-	hud.camp_pressed.connect(return_to_camp)
+	hud.select_pressed.connect(return_to_select)
+	hud.next_pressed.connect(go_next_stage)
+	hud.level_pressed.connect(enter_stage)
 	add_child(hud)
 
 
@@ -430,7 +473,7 @@ func _finish(win: bool) -> void:
 	result_win = win
 	spawner.cancel()
 	if win:
-		save.cleared = true
+		save.mark_cleared(catalog.stage_id, catalog.stage_index == 0)
 	save.write_file()
 	selected = -1
 	_refresh_selection_visuals()
@@ -473,6 +516,32 @@ func _move_hero_screen(screen_pos: Vector2) -> void:
 	hero.move_to(local)
 
 
+func _rebuild_lane() -> void:
+	_wipe_field()
+	if map_view:
+		map_view.setup(catalog, UiStyle.font())
+	var curve := Curve2D.new()
+	for point in catalog.path:
+		curve.add_point(point)
+	path.curve = curve
+	for spot in spot_nodes:
+		if is_instance_valid(spot):
+			spot.get_parent().remove_child(spot)
+			spot.free()
+	spot_nodes.clear()
+	built.clear()
+	for i in catalog.spots.size():
+		var spot := BuildSpot.new()
+		spot.position = catalog.spots[i]
+		spot.z_index = 4
+		spot.setup(i)
+		spot.picked.connect(_on_spot)
+		world.add_child(spot)
+		spot_nodes.append(spot)
+		built.append(null)
+	hero.place(catalog.hero_start, catalog.hero, 0.0)
+
+
 func _wipe_field() -> void:
 	spawner.cancel()
 	for foe in path.get_children():
@@ -512,17 +581,21 @@ func _set_note(text: String) -> void:
 
 
 func _wave_label() -> String:
+	if state == STATE_SELECT:
+		return "选关"
 	if state == STATE_CAMP:
-		return "营地"
+		return "第 %d 关" % (catalog.stage_index + 1)
 	if state == STATE_RESULT:
 		return "结束"
 	if launched <= 0:
-		return "第 0/%d 波" % catalog.waves.size()
+		return "第 %d 关 · 第 0/%d 波" % [catalog.stage_index + 1, catalog.waves.size()]
 	var phase := "交战" if spawner.busy or not wave_resolved else "间歇"
-	return "第 %d/%d 波 · %s" % [launched, catalog.waves.size(), phase]
+	return "第 %d 关 · 第 %d/%d 波 · %s" % [catalog.stage_index + 1, launched, catalog.waves.size(), phase]
 
 
 func _hint_text() -> String:
+	if state == STATE_SELECT:
+		return "点底部已解锁的关。通关后下一关才会打开。"
 	if state != STATE_BATTLE:
 		return "底部按钮放在拇指够得到的位置。点空地移动巡岸卫。"
 	if selected < 0:
@@ -578,16 +651,45 @@ func _wave_button_text() -> String:
 	return "出波 %d" % (wave_index + 1)
 
 
+func _select_text() -> String:
+	var done := 0
+	for stage in catalog.stages:
+		if save.is_cleared(str(stage["id"])):
+			done += 1
+	return "四关都是一条水路、五波敌人。第 1 关默认打开，守住才解锁下一关。已通关 %d/4。徽记 %d。生命和金币只在当局有效。" % [done, save.tokens]
+
+
 func _camp_text() -> String:
 	var bonus := GameCatalog.bonuses(save, catalog)
-	var clear_text := "已守住水闸" if save.cleared else "还没有通关"
-	return "潮退之后，芦寇顺着旧渠摸向水闸。守住五波，并且还有生命，才算赢。\n石弩、霜坛、焰壶各有两条升级路线，一座塔只能选一条。\n巡岸卫会自己攻击，点地图空地让他换位置，断流可以减速一片。\n通关记录：%s。徽记 %d。下一局加成：金币 +%d，生命 +%d。\n生命和金币只在本局变化。保存 / 读取只处理研究所和通关结果。\n键位：1/2/3 造塔，Q/E 升级，R 出售，F 断流，空格出波。" % [clear_text, save.tokens, int(bonus["gold"]), int(bonus["lives"])]
+	var clear_text := "这一关已通关" if save.is_cleared(catalog.stage_id) else "这一关还没守住"
+	return "%s\n守住五波，并且还有生命，才算赢。石弩、霜坛、焰壶各有两条升级路线，一座塔只能选一条。\n巡岸卫会自己攻击。点空地让他换位置。%s。徽记 %d。本关开局加成：金币 +%d，生命 +%d。\n键位：1/2/3 造塔，Q/E 升级，R 出售，F 断流，空格出波。" % [catalog.stage_blurb, clear_text, save.tokens, int(bonus["gold"]), int(bonus["lives"])]
 
 
 func _result_text() -> String:
 	if result_win:
-		return "五波都拦住了，水闸还在。这一局得到徽记 %d。研究所里的购买已经写入存档。再守一次会重新计算生命和金币。" % tokens_earned
-	return "生命耗尽，芦寇越过了水闸。这一局得到徽记 %d。已经买下的研究所等级还在；本局金币不会留下。" % tokens_earned
+		var extra := "回到选关可以继续。"
+		if catalog.stage_index + 1 >= catalog.stages.size():
+			extra = "四关都守住了。"
+		elif save.is_unlocked(catalog.stage_index + 1, catalog.stage_ids()):
+			extra = "下一关已经打开。"
+		return "五波都拦住了。这一局得到徽记 %d。%s通关记录已写入存档。再守一次会重算生命和金币。" % [tokens_earned, extra]
+	return "生命耗尽。这一局得到徽记 %d。已通关的关和研究所还在；本局金币不会留下。" % tokens_earned
+
+
+func _level_rows() -> Array:
+	var rows: Array = []
+	var ids := catalog.stage_ids()
+	for i in catalog.stages.size():
+		var stage: Dictionary = catalog.stages[i]
+		var unlocked := save.is_unlocked(i, ids)
+		var done := save.is_cleared(str(stage["id"]))
+		var text := "第%d关\n%s" % [i + 1, stage["name"]]
+		if not unlocked:
+			text = "第%d关\n未解锁" % (i + 1)
+		elif done:
+			text = "第%d关\n%s\n已通关" % [i + 1, stage["name"]]
+		rows.append({"text": text, "enabled": unlocked})
+	return rows
 
 
 func _shop_rows() -> Array:
