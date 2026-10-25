@@ -41,10 +41,11 @@
   Object.values(byChamp).forEach(sortByWin);
   Object.values(byAugment).forEach(sortByWin);
 
-  const mapNote = data.meta.maps.join("、");
+  const mapNote = data.meta.mapNote;
   document.getElementById("lede").textContent =
     "补丁 " + data.meta.patch + "，" + data.meta.fetchedAt + " 抓取自 " + data.meta.sourceName +
-    "。海克斯和英雄整体胜率来自这个来源，三张地图合在一起，站点未按单张地图拆开，也没有标成国服。装备页是另一来源，写的是普通极地大乱斗，不是海克斯乱斗。";
+    "。海克斯和英雄整体胜率来自这个来源。" + mapNote +
+    "装备页是另一来源，写的是普通极地大乱斗，不是海克斯乱斗。";
 
   const ageDays = (Date.now() - Date.parse(data.meta.fetchedAt + "T00:00:00Z")) / 86400000;
   if (ageDays > data.meta.staleAfterDays) {
@@ -257,8 +258,7 @@
       "</div>" +
       '<div class="note"><p>选取时胜率 ' + pct(row.win) + "，未选取时 " + pct(row.base) + "，差 " + signed(row.delta) + " 个百分点。</p>" +
       "<p>来源 <a href=\"" + page + "\" target=\"_blank\" rel=\"noreferrer\">" + esc(page) + "</a>。补丁 " +
-      data.meta.patch + "，抓取 " + data.meta.fetchedAt + "。样本把 " + esc(mapNote) +
-      " 合在一起，站点未按单张地图拆开。</p></div></div>";
+      data.meta.patch + "，抓取 " + data.meta.fetchedAt + "。" + esc(mapNote) + "</p></div></div>";
     if (!dialog.open) dialog.showModal();
   }
 

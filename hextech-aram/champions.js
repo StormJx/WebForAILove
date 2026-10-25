@@ -13,11 +13,10 @@
     return;
   }
 
-  const mapNote = data.meta.maps.join("、");
   document.getElementById("lede").textContent =
     "补丁 " + data.meta.patch + "，" + data.meta.fetchedAt + " 抓取自 " + data.meta.sourceName +
-    "。这是海克斯大乱斗的英雄整体胜率，三张地图合在一起：" + mapNote +
-    "。站点未按单张地图拆开，也没有标成国服。没有胜率的英雄只出现在「没有数据」。";
+    "。这是海克斯大乱斗的英雄整体胜率。" + data.meta.mapNote +
+    "没有胜率的英雄只出现在「没有数据」。";
 
   qEl.addEventListener("input", render);
   render();
