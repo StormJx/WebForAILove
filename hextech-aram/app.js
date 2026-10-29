@@ -45,7 +45,7 @@
   document.getElementById("lede").textContent =
     "补丁 " + data.meta.patch + "，" + data.meta.fetchedAt + " 抓取自 " + data.meta.sourceName +
     "。海克斯和英雄整体胜率来自这个来源。" + mapNote +
-    "装备页是另一来源，写的是普通极地大乱斗，不是海克斯乱斗。";
+    "装备页也是海克斯大乱斗，来自 arammayhem.com，补丁 26.21，页面数据日期 2026-10-28。Mayhem:Meta 没有购买顺序，所以装备不从那边取。不是国服。";
 
   const ageDays = (Date.now() - Date.parse(data.meta.fetchedAt + "T00:00:00Z")) / 86400000;
   if (ageDays > data.meta.staleAfterDays) {
@@ -118,7 +118,7 @@
         button.setAttribute("aria-selected", button.dataset.pane === pane ? "true" : "false");
       });
       if (pane === "items") {
-        hintEl.textContent = champ.title + " · " + champ.given + " 的装备。普通极地大乱斗，不是海克斯乱斗。只有这一套。";
+        hintEl.textContent = champ.title + " · " + champ.given + " 的装备。海克斯大乱斗。只有这一套。";
         renderBuild(champ);
         return;
       }
@@ -161,23 +161,65 @@
     }
     const build = pack.champions[champ.key];
     const meta = pack.meta;
-    const steps = build && build.steps ? build.steps : [];
-    if (!build || !steps.length) {
-      listEl.innerHTML = '<div class="empty-state"><strong>暂无数据</strong><p>这个英雄在普通极地大乱斗页面里没有出装顺序。</p></div>';
+    if (!build || (!build.starter && !build.boots && !build.core)) {
+      listEl.innerHTML = '<div class="empty-state"><strong>暂无数据</strong><p>这个英雄在海克斯大乱斗出装页上没有出门装，也没有后续顺序。</p></div>';
       return;
     }
     listEl.innerHTML =
       '<article class="build">' +
       '<p class="build-warn">' + esc(meta.modeLabel) + "</p>" +
-      '<p class="build-scope">来源 ' + esc(meta.sourceName) + "，补丁 " + esc(meta.patch) + "，" + esc(meta.fetchedAt) +
-      " 打开。这套是页面选中的 " + esc(build.title) + "，样本 " + esc(build.gamesText) + " 场，页面标的胜率 " + esc(build.winText) +
-      "。" + esc(meta.mapNote) + "，" + esc(meta.region) + "。</p>" +
+      '<p class="build-scope">来源 ' + esc(meta.sourceName) + "，补丁 " + esc(meta.patch) +
+      "，页面数据日期 " + esc(meta.dataDate) + "，" + esc(meta.fetchedAt) + " 打开。" +
+      esc(meta.region) + "。" + esc(meta.mapNote) + "</p>" +
       "<h3>这一套</h3>" +
-      '<p class="build-sub">顺序写到页面的 Build Order 结束。来源没有再写后面的件数，这里不补。这一套每一件页面只给了一个选项。</p>' +
-      steps.map(function (step, index) {
-        return '<div class="step"><span class="step-no">' + pieceLabel(index) + "</span><b>" + esc(step.zh) + "</b></div>";
-      }).join("") +
+      '<p class="build-sub">' + esc(meta.rule) + "</p>" +
+      starterBlock(build.starter) +
+      bootsBlock(build.boots) +
+      coreBlock(build.core) +
       "</article>";
+  }
+
+  function starterBlock(starter) {
+    if (!starter || !starter.items || !starter.items.length) {
+      return "<h3>出门装</h3>" + '<p class="build-sub">来源没有出门装。</p>';
+    }
+    const extra = starter.listed > 1
+      ? "来源这一栏还有另外 " + (starter.listed - 1) + " 组，没有并进这一套。"
+      : "来源这一栏只有这一组。";
+    return "<h3>出门装</h3>" +
+      '<p class="starter">' + starter.items.map(esc).join(" → ") + "</p>" +
+      '<p class="build-sub">整组登场率 ' + esc(starter.pick) + "，胜率 " + esc(starter.win) + "。" + extra + "</p>";
+  }
+
+  function bootsBlock(boots) {
+    const options = boots && boots.options ? boots.options : [];
+    if (!options.length) {
+      return "<h3>鞋子</h3>" + '<p class="build-sub">来源没有鞋子这一步。</p>';
+    }
+    const note = boots.listed > options.length
+      ? "来源这一步列了 " + boots.listed + " 件，这里按登场率留 " + options.length + " 件。"
+      : "来源这一步给了 " + options.length + " 件。";
+    return "<h3>鞋子</h3>" +
+      '<p class="build-sub">这一步选一件。' + note + "</p>" +
+      '<div class="slot">' + options.map(function (item) {
+        return '<div class="item-line"><b>' + esc(item.zh) + '</b><span class="win">' + esc(item.win) +
+          "</span><span>登场率 " + esc(item.pick) + "</span></div>";
+      }).join("") + "</div>";
+  }
+
+  function coreBlock(core) {
+    if (!core || !core.items || !core.items.length) {
+      return "<h3>核心</h3>" + '<p class="build-sub">来源没有后续核心顺序。</p>';
+    }
+    const extra = core.listed > 1
+      ? "来源另外还有 " + (core.listed - 1) + " 条完整核心，没有再铺成别的套装。"
+      : "来源这一栏只有这一条。";
+    return "<h3>核心</h3>" +
+      '<p class="build-sub">来源把下面几件写成一条顺序，同一步没有第二件可选。整条登场率 ' +
+      esc(core.pick) + "，胜率 " + esc(core.win) + "。" + extra + "</p>" +
+      core.items.map(function (name, index) {
+        return '<div class="step"><span class="step-no">' + pieceLabel(index) + "</span><b>" + esc(name) + "</b></div>";
+      }).join("");
   }
 
   function pieceLabel(index) {
