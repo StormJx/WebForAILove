@@ -49,7 +49,7 @@
     "装备页也是海克斯大乱斗，来自 arammayhem.com，补丁 " +
     (buildsMeta ? buildsMeta.patch : "26.21") + "，页面数据日期 " +
     (buildsMeta ? buildsMeta.dataDate : "") +
-    "。出门装、鞋子、核心各按来源页面先后最多列 3 套。Mayhem:Meta 没有购买顺序，所以装备不从那边取。不是国服。";
+    "。出门装、鞋子、核心各按登场率从高到低最多列 3 套。Mayhem:Meta 没有购买顺序，所以装备不从那边取。不是国服。";
 
   const ageDays = (Date.now() - Date.parse(data.meta.fetchedAt + "T00:00:00Z")) / 86400000;
   if (ageDays > data.meta.staleAfterDays) {
@@ -122,7 +122,7 @@
         button.setAttribute("aria-selected", button.dataset.pane === pane ? "true" : "false");
       });
       if (pane === "items") {
-        hintEl.textContent = champ.title + " · " + champ.given + " 的装备。海克斯大乱斗。出门装、鞋子、核心各最多三套。";
+        hintEl.textContent = champ.title + " · " + champ.given + " 的装备。海克斯大乱斗。出门装、鞋子、核心按登场率各最多三套。";
         renderBuild(champ);
         return;
       }
@@ -189,7 +189,7 @@
     }
     const listed = block.listed || sets.length;
     const note = listed > sets.length
-      ? "来源共 " + listed + " 套，这里按页面先后留前 " + sets.length + " 套。"
+      ? "来源共 " + listed + " 套，这里按登场率留前 " + sets.length + " 套。"
       : "来源这一栏有 " + listed + " 套。";
     return "<h3>" + title + "</h3>" +
       '<p class="build-sub">' + note + "</p>" +
