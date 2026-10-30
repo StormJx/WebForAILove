@@ -42,10 +42,14 @@
   Object.values(byAugment).forEach(sortByWin);
 
   const mapNote = data.meta.mapNote;
+  const buildsMeta = window.HEX_BUILDS && window.HEX_BUILDS.meta;
   document.getElementById("lede").textContent =
     "补丁 " + data.meta.patch + "，" + data.meta.fetchedAt + " 抓取自 " + data.meta.sourceName +
     "。海克斯和英雄整体胜率来自这个来源。" + mapNote +
-    "装备页也是海克斯大乱斗，来自 arammayhem.com，补丁 26.21，页面数据日期 2026-10-28。Mayhem:Meta 没有购买顺序，所以装备不从那边取。不是国服。";
+    "装备页也是海克斯大乱斗，来自 arammayhem.com，补丁 " +
+    (buildsMeta ? buildsMeta.patch : "26.21") + "，页面数据日期 " +
+    (buildsMeta ? buildsMeta.dataDate : "") +
+    "。出门装、鞋子、核心各按来源页面先后最多列 3 套。Mayhem:Meta 没有购买顺序，所以装备不从那边取。不是国服。";
 
   const ageDays = (Date.now() - Date.parse(data.meta.fetchedAt + "T00:00:00Z")) / 86400000;
   if (ageDays > data.meta.staleAfterDays) {
@@ -118,7 +122,7 @@
         button.setAttribute("aria-selected", button.dataset.pane === pane ? "true" : "false");
       });
       if (pane === "items") {
-        hintEl.textContent = champ.title + " · " + champ.given + " 的装备。海克斯大乱斗。只有这一套。";
+        hintEl.textContent = champ.title + " · " + champ.given + " 的装备。海克斯大乱斗。出门装、鞋子、核心各最多三套。";
         renderBuild(champ);
         return;
       }
@@ -171,60 +175,36 @@
       '<p class="build-scope">来源 ' + esc(meta.sourceName) + "，补丁 " + esc(meta.patch) +
       "，页面数据日期 " + esc(meta.dataDate) + "，" + esc(meta.fetchedAt) + " 打开。" +
       esc(meta.region) + "。" + esc(meta.mapNote) + "</p>" +
-      "<h3>这一套</h3>" +
       '<p class="build-sub">' + esc(meta.rule) + "</p>" +
-      starterBlock(build.starter) +
-      bootsBlock(build.boots) +
-      coreBlock(build.core) +
+      setsBlock("出门装", build.starter, "来源没有出门装。") +
+      setsBlock("鞋子", build.boots, "来源没有鞋子这一步。") +
+      setsBlock("核心", build.core, "来源没有后续核心顺序。") +
       "</article>";
   }
 
-  function starterBlock(starter) {
-    if (!starter || !starter.items || !starter.items.length) {
-      return "<h3>出门装</h3>" + '<p class="build-sub">来源没有出门装。</p>';
+  function setsBlock(title, block, emptyText) {
+    const sets = block && block.sets ? block.sets : [];
+    if (!sets.length) {
+      return "<h3>" + title + "</h3>" + '<p class="build-sub">' + emptyText + "</p>";
     }
-    const extra = starter.listed > 1
-      ? "来源这一栏还有另外 " + (starter.listed - 1) + " 组，没有并进这一套。"
-      : "来源这一栏只有这一组。";
-    return "<h3>出门装</h3>" +
-      '<p class="starter">' + starter.items.map(esc).join(" → ") + "</p>" +
-      '<p class="build-sub">整组登场率 ' + esc(starter.pick) + "，胜率 " + esc(starter.win) + "。" + extra + "</p>";
-  }
-
-  function bootsBlock(boots) {
-    const options = boots && boots.options ? boots.options : [];
-    if (!options.length) {
-      return "<h3>鞋子</h3>" + '<p class="build-sub">来源没有鞋子这一步。</p>';
-    }
-    const note = boots.listed > options.length
-      ? "来源这一步列了 " + boots.listed + " 件，这里按登场率留 " + options.length + " 件。"
-      : "来源这一步给了 " + options.length + " 件。";
-    return "<h3>鞋子</h3>" +
-      '<p class="build-sub">这一步选一件。' + note + "</p>" +
-      '<div class="slot">' + options.map(function (item) {
-        return '<div class="item-line"><b>' + esc(item.zh) + '</b><span class="win">' + esc(item.win) +
-          "</span><span>登场率 " + esc(item.pick) + "</span></div>";
-      }).join("") + "</div>";
-  }
-
-  function coreBlock(core) {
-    if (!core || !core.items || !core.items.length) {
-      return "<h3>核心</h3>" + '<p class="build-sub">来源没有后续核心顺序。</p>';
-    }
-    const extra = core.listed > 1
-      ? "来源另外还有 " + (core.listed - 1) + " 条完整核心，没有再铺成别的套装。"
-      : "来源这一栏只有这一条。";
-    return "<h3>核心</h3>" +
-      '<p class="build-sub">来源把下面几件写成一条顺序，同一步没有第二件可选。整条登场率 ' +
-      esc(core.pick) + "，胜率 " + esc(core.win) + "。" + extra + "</p>" +
-      core.items.map(function (name, index) {
-        return '<div class="step"><span class="step-no">' + pieceLabel(index) + "</span><b>" + esc(name) + "</b></div>";
+    const listed = block.listed || sets.length;
+    const note = listed > sets.length
+      ? "来源共 " + listed + " 套，这里按页面先后留前 " + sets.length + " 套。"
+      : "来源这一栏有 " + listed + " 套。";
+    return "<h3>" + title + "</h3>" +
+      '<p class="build-sub">' + note + "</p>" +
+      sets.map(function (set, index) {
+        return '<div class="set" data-set="' + (index + 1) + '">' +
+          '<p class="set-no">' + setLabel(index) + "</p>" +
+          '<p class="starter">' + set.items.map(esc).join(" → ") + "</p>" +
+          '<p class="build-sub">登场率 ' + esc(set.pick) + "，胜率 " + esc(set.win) + "。</p>" +
+          "</div>";
       }).join("");
   }
 
-  function pieceLabel(index) {
-    const names = ["第一件", "第二件", "第三件", "第四件", "第五件", "第六件", "第七件", "第八件", "第九件", "第十件", "第十一件", "第十二件"];
-    return names[index] || ("第" + (index + 1) + "件");
+  function setLabel(index) {
+    const names = ["第一套", "第二套", "第三套"];
+    return names[index] || ("第" + (index + 1) + "套");
   }
 
   function renderRows(rows, showChamp) {

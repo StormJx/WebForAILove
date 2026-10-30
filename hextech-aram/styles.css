@@ -244,7 +244,9 @@ dialog::backdrop { background: rgba(28, 25, 21, 0.46); }
   box-shadow: var(--shadow);
 }
 .build h3 { margin: 14px 0 4px; font-size: 16px; }
-.starter { margin: 8px 0 0; font-size: 16px; font-weight: 750; }
+.set { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.set-no { margin: 0; font-size: 13px; font-weight: 750; color: var(--accent); }
+.starter { margin: 4px 0 0; font-size: 16px; font-weight: 750; }
 .build-warn {
   margin: 0;
   padding: 10px 12px;
