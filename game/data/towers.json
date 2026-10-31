@@ -1,0 +1,97 @@
+{
+  "order": ["stone", "frost", "flame"],
+  "towers": {
+    "stone": {
+      "name": "石弩",
+      "kind": "bolt",
+      "cost": 55,
+      "range": 158,
+      "damage": 12,
+      "cooldown": 0.48,
+      "projectile_speed": 460,
+      "color": "#d7c4a3",
+      "branches": [
+        {
+          "id": "pierce",
+          "name": "穿石",
+          "blurb": "提高单发伤害",
+          "levels": [
+            {"cost": 40, "damage_add": 8},
+            {"cost": 65, "damage_add": 11}
+          ]
+        },
+        {
+          "id": "rapid",
+          "name": "连发",
+          "blurb": "缩短攻击间隔",
+          "levels": [
+            {"cost": 40, "cooldown_mul": 0.75},
+            {"cost": 60, "cooldown_mul": 0.72}
+          ]
+        }
+      ]
+    },
+    "frost": {
+      "name": "霜坛",
+      "kind": "pulse",
+      "cost": 75,
+      "range": 132,
+      "damage": 4,
+      "cooldown": 0.8,
+      "slow": 0.58,
+      "slow_time": 1.35,
+      "color": "#b7d7e8",
+      "branches": [
+        {
+          "id": "deep",
+          "name": "厚霜",
+          "blurb": "减速更强",
+          "levels": [
+            {"cost": 50, "slow_add": -0.14, "damage_add": 2},
+            {"cost": 75, "slow_add": -0.12, "damage_add": 3}
+          ]
+        },
+        {
+          "id": "wide",
+          "name": "广罩",
+          "blurb": "扩大霜圈",
+          "levels": [
+            {"cost": 50, "range_add": 30, "slow_time_add": 0.35},
+            {"cost": 70, "range_add": 34, "damage_add": 2}
+          ]
+        }
+      ]
+    },
+    "flame": {
+      "name": "焰壶",
+      "kind": "splash",
+      "cost": 90,
+      "range": 142,
+      "damage": 11,
+      "cooldown": 1.15,
+      "projectile_speed": 320,
+      "splash": 54,
+      "color": "#e39b62",
+      "branches": [
+        {
+          "id": "burst",
+          "name": "爆裂",
+          "blurb": "提高爆炸伤害",
+          "levels": [
+            {"cost": 55, "damage_add": 7, "splash_add": 10},
+            {"cost": 80, "damage_add": 9, "splash_add": 12}
+          ]
+        },
+        {
+          "id": "ember",
+          "name": "余烬",
+          "blurb": "命中后持续灼烧",
+          "levels": [
+            {"cost": 50, "burn_dps": 6, "burn_time": 2.2},
+            {"cost": 75, "burn_dps": 7, "burn_time": 1.4}
+          ]
+        }
+      ]
+    }
+  }
+}
