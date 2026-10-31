@@ -174,7 +174,9 @@
       '<p class="build-warn">' + esc(meta.modeLabel) + "</p>" +
       '<p class="build-scope">来源 ' + esc(meta.sourceName) + "，补丁 " + esc(meta.patch) +
       "，页面数据日期 " + esc(meta.dataDate) + "，" + esc(meta.fetchedAt) + " 打开。" +
-      esc(meta.region) + "。" + esc(meta.mapNote) + "</p>" +
+      esc(meta.region) + "。" + esc(meta.mapNote) +
+      (window.HEX_ITEM_ICONS && window.HEX_ITEM_ICONS.note ? esc(window.HEX_ITEM_ICONS.note) : "") +
+      "</p>" +
       '<p class="build-sub">' + esc(meta.rule) + "</p>" +
       setsBlock("出门装", build.starter, "来源没有出门装。") +
       setsBlock("鞋子", build.boots, "来源没有鞋子这一步。") +
@@ -196,7 +198,7 @@
       sets.map(function (set, index) {
         return '<div class="set" data-set="' + (index + 1) + '">' +
           '<p class="set-no">' + setLabel(index) + "</p>" +
-          '<p class="starter">' + set.items.map(esc).join(" → ") + "</p>" +
+          itemRow(set.items) +
           '<p class="build-sub">登场率 ' + esc(set.pick) + "，胜率 " + esc(set.win) + "。</p>" +
           "</div>";
       }).join("");
@@ -205,6 +207,22 @@
   function setLabel(index) {
     const names = ["第一套", "第二套", "第三套"];
     return names[index] || ("第" + (index + 1) + "套");
+  }
+
+  function itemRow(items) {
+    return '<div class="item-row">' + items.map(function (name, index) {
+      return (index ? '<span class="item-arrow" aria-hidden="true">→</span>' : "") + itemChip(name);
+    }).join("") + "</div>";
+  }
+
+  function itemChip(name) {
+    const icons = window.HEX_ITEM_ICONS;
+    const file = icons && icons.files ? icons.files[name] : "";
+    if (!file || !icons.base) {
+      return '<span class="item item-missing"><b>' + esc(name) + '</b><span class="miss">缺图</span></span>';
+    }
+    return '<span class="item"><img src="' + esc(icons.base + file) + '" alt="' + esc(name) +
+      '" width="48" height="48"><span class="item-name">' + esc(name) + "</span></span>";
   }
 
   function renderRows(rows, showChamp) {
