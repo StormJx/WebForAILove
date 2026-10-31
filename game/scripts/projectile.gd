@@ -10,9 +10,10 @@ var color := Color.WHITE
 var age := 0.0
 var hit_radius := 8.0
 var spent := false
+var _sprite: Sprite2D
 
 
-func launch(from: Vector2, to: Vector2, speed: float, hit_damage: float, splash_radius: float, ember_dps: float, ember_time: float, tint: Color) -> void:
+func launch(from: Vector2, to: Vector2, speed: float, hit_damage: float, splash_radius: float, ember_dps: float, ember_time: float, tint: Color, style := "bolt") -> void:
 	position = from
 	var direction := to - from
 	if direction.length_squared() < 1.0:
@@ -23,6 +24,12 @@ func launch(from: Vector2, to: Vector2, speed: float, hit_damage: float, splash_
 	burn_dps = ember_dps
 	burn_time = ember_time
 	color = tint
+	if _sprite == null:
+		_sprite = Sprite2D.new()
+		_sprite.name = "Body"
+		add_child(_sprite)
+	ArtBank.center(_sprite, ArtBank.bolt_texture(style), 18.0)
+	_sprite.modulate = Color.WHITE.lerp(tint, 0.25)
 
 
 func _process(delta: float) -> void:
@@ -37,10 +44,11 @@ func _process(delta: float) -> void:
 			_impact(foe)
 			return
 	position = nxt
+	if velocity.length_squared() > 1.0:
+		_sprite.rotation = velocity.angle()
 	age += delta
 	if age > 1.6 or position.x < -80 or position.y < -80 or position.x > 900 or position.y > 320:
 		queue_free()
-	queue_redraw()
 
 
 func _impact(foe: LaneEnemy) -> void:
@@ -70,6 +78,3 @@ func _hits(a: Vector2, b: Vector2, center: Vector2, radius: float) -> bool:
 	return a.lerp(b, t).distance_to(center) <= radius
 
 
-func _draw() -> void:
-	draw_circle(Vector2.ZERO, 5.0, color)
-	draw_line(Vector2.ZERO, -velocity.normalized() * 10.0, Color(color, 0.7), 3.0)

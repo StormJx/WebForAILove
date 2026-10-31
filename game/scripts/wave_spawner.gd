@@ -50,6 +50,7 @@ func _spawn(foe_id: String) -> void:
 	if not catalog.enemies.has(foe_id):
 		return
 	var stats: Dictionary = (catalog.enemies[foe_id] as Dictionary).duplicate()
+	stats["id"] = foe_id
 	var foe := enemy_scene.instantiate() as LaneEnemy
 	foe.setup(stats)
 	foe.killed.connect(func(gold_value: int) -> void: foe_killed.emit(gold_value))

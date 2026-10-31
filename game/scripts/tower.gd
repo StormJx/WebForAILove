@@ -23,6 +23,8 @@ var spent := 0
 var show_range := false
 var aim := Vector2.RIGHT
 var pulse := 0.0
+var _sprite: Sprite2D
+var _showed := false
 
 
 func setup(def: Dictionary) -> void:
@@ -31,6 +33,7 @@ func setup(def: Dictionary) -> void:
 	display_name = str(def.get("name", "塔"))
 	color = Color(str(def.get("color", "#ffffff")))
 	_recompute()
+	_ensure_art()
 
 
 func map_pos() -> Vector2:
@@ -131,24 +134,32 @@ func _recompute() -> void:
 
 
 func _process(delta: float) -> void:
+	var drawing := pulse > 0.0 or show_range or _showed
 	if pulse > 0.0:
 		pulse = maxf(pulse - delta, 0.0)
 	cooldown_left -= delta
 	if cooldown_left > 0.0:
-		if show_range or pulse > 0.0:
+		_showed = show_range or pulse > 0.0
+		if drawing:
 			queue_redraw()
 		return
 	var target := _nearest()
 	if target == null:
-		if show_range:
+		_showed = show_range or pulse > 0.0
+		if drawing:
 			queue_redraw()
 		return
 	aim = target.map_pos() - map_pos()
+	if aim.x > 4.0:
+		_sprite.flip_h = false
+	elif aim.x < -4.0:
+		_sprite.flip_h = true
 	if kind == "pulse":
 		_pulse()
 	else:
 		_shoot(target)
 	cooldown_left = cooldown
+	_showed = true
 	queue_redraw()
 
 
@@ -177,7 +188,7 @@ func _shoot(target: LaneEnemy) -> void:
 		aim_pos += target.travel.normalized() * target.speed * target.slow_factor * eta * 0.85
 	var bolt := BOLT_SCENE.instantiate() as Bolt
 	fx.add_child(bolt)
-	bolt.launch(map_pos(), aim_pos, projectile_speed, damage, splash, burn_dps, burn_time, color)
+	bolt.launch(map_pos(), aim_pos, projectile_speed, damage, splash, burn_dps, burn_time, color, kind)
 
 
 func _pulse() -> void:
@@ -191,22 +202,19 @@ func _pulse() -> void:
 			foe.apply_slow(slow, slow_time)
 
 
+func _ensure_art() -> void:
+	if _sprite == null:
+		_sprite = Sprite2D.new()
+		_sprite.name = "Body"
+		_sprite.z_index = 1
+		add_child(_sprite)
+	ArtBank.plant(_sprite, ArtBank.tower_texture(kind), ArtBank.tower_height(kind))
+	_sprite.position = Vector2(0, 8)
+
+
 func _draw() -> void:
 	if show_range:
 		draw_arc(Vector2.ZERO, range_radius, 0, TAU, 48, Color(color, 0.85), 1.5, true)
 		draw_circle(Vector2.ZERO, range_radius, Color(color, 0.08))
 	if pulse > 0.0:
 		draw_arc(Vector2.ZERO, range_radius * (1.0 - pulse), 0, TAU, 40, Color(color, pulse * 2.0), 2.0, true)
-	draw_circle(Vector2(0, 3), 16, Color(0, 0, 0, 0.2))
-	match kind:
-		"bolt":
-			draw_rect(Rect2(Vector2(-12, -10), Vector2(24, 20)), color)
-			var barrel := aim.normalized() * 16.0 if aim.length_squared() > 0.01 else Vector2(16, 0)
-			draw_line(Vector2.ZERO, barrel, Color("4a3b2a"), 4.0)
-		"pulse":
-			draw_circle(Vector2.ZERO, 14, color)
-			draw_arc(Vector2.ZERO, 8, 0, TAU, 16, Color("f4fbff"), 2.0, true)
-		_:
-			draw_circle(Vector2.ZERO, 13, color)
-			draw_colored_polygon(PackedVector2Array([Vector2(-6, 4), Vector2(0, -14), Vector2(6, 4)]), Color("f3e1a6"))
-	draw_arc(Vector2.ZERO, 15, 0, TAU, 20, Color(0.12, 0.1, 0.08, 0.7), 1.5, true)

@@ -19,9 +19,14 @@ var burn_dps := 0.0
 var burn_time := 0.0
 var flash := 0.0
 var travel := Vector2.ZERO
+var foe_id := "raider"
+var body_height := 38.0
+var _sprite: Sprite2D
+var _bar: Node2D
 
 
 func setup(def: Dictionary) -> void:
+	foe_id = str(def.get("id", "raider"))
 	foe_name = str(def.get("name", ""))
 	max_hp = float(def["hp"])
 	hp = max_hp
@@ -34,6 +39,7 @@ func setup(def: Dictionary) -> void:
 	loop = false
 	if not is_in_group("foes"):
 		add_to_group("foes")
+	_ensure_art()
 
 
 func map_pos() -> Vector2:
@@ -88,9 +94,14 @@ func _process(delta: float) -> void:
 	var before := position
 	progress += speed * slow_factor * delta
 	travel = position - before
+	if travel.x > 1.2:
+		_sprite.flip_h = false
+	elif travel.x < -1.2:
+		_sprite.flip_h = true
+	_sprite.modulate = _tint()
 	if progress >= length - 0.5:
 		_leak()
-	queue_redraw()
+	_bar.queue_redraw()
 
 
 func _die() -> void:
@@ -113,17 +124,37 @@ func _leak() -> void:
 	queue_free()
 
 
-func _draw() -> void:
-	var tint := color.lerp(Color.WHITE, clampf(flash * 4.0, 0.0, 0.65))
+func _ensure_art() -> void:
+	if _sprite == null:
+		_sprite = Sprite2D.new()
+		_sprite.name = "Body"
+		_sprite.z_index = 1
+		add_child(_sprite)
+		_bar = Node2D.new()
+		_bar.name = "Bar"
+		_bar.z_index = 2
+		_bar.draw.connect(_draw_bar)
+		add_child(_bar)
+	body_height = ArtBank.foe_height(foe_id)
+	ArtBank.plant(_sprite, ArtBank.foe_texture(foe_id), body_height)
+	_sprite.position = Vector2(0, radius * 0.65)
+
+
+func _tint() -> Color:
+	var tint := Color.WHITE
 	if burn_time > 0.0:
-		tint = tint.lerp(Color("e07a3a"), 0.45)
-	draw_circle(Vector2.ZERO, radius + 2.0, Color(0, 0, 0, 0.28))
-	draw_circle(Vector2.ZERO, radius, tint)
-	draw_arc(Vector2.ZERO, radius, 0, TAU, 18, Color(0.1, 0.12, 0.1, 0.8), 1.5, true)
-	if travel.length_squared() > 0.01:
-		draw_line(Vector2.ZERO, travel.normalized() * radius, Color(0.1, 0.1, 0.08), 2.0)
-	var width := radius * 2.2
+		tint = Color("ffc2a2")
+	elif slow_time > 0.0:
+		tint = Color("d7eeff")
+	if flash > 0.0:
+		tint = tint.lerp(Color(1.7, 1.7, 1.7), clampf(flash * 6.0, 0.0, 1.0))
+	return tint
+
+
+func _draw_bar() -> void:
+	var width := maxf(radius * 2.2, 18.0)
 	var ratio := clampf(hp / max_hp, 0.0, 1.0)
-	var bar := Vector2(-width * 0.5, -radius - 7.0)
-	draw_rect(Rect2(bar, Vector2(width, 3.0)), Color(0, 0, 0, 0.45))
-	draw_rect(Rect2(bar, Vector2(width * ratio, 3.0)), Color("e7efe4"))
+	var top := _sprite.position.y - body_height - 6.0
+	var bar := Vector2(-width * 0.5, top)
+	_bar.draw_rect(Rect2(bar, Vector2(width, 3.0)), Color(0, 0, 0, 0.45))
+	_bar.draw_rect(Rect2(bar, Vector2(width * ratio, 3.0)), Color("e7efe4"))

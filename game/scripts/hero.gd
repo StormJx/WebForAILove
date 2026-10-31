@@ -19,6 +19,7 @@ var goal := Vector2.ZERO
 var moving := false
 var ring := 0.0
 var facing := Vector2.RIGHT
+var _sprite: Sprite2D
 
 
 func setup(def: Dictionary) -> void:
@@ -35,6 +36,7 @@ func setup(def: Dictionary) -> void:
 	ability_cooldown = float(ability["cooldown"])
 	ability_slow = float(ability["slow"])
 	ability_slow_time = float(ability["slow_time"])
+	_ensure_art()
 
 
 func place(spot: Vector2, def: Dictionary, damage_bonus: float) -> void:
@@ -81,6 +83,7 @@ func _process(delta: float) -> void:
 			position += facing * step
 	if ability_left > 0.0:
 		ability_left = maxf(ability_left - delta, 0.0)
+	var drawing := ring > 0.0
 	if ring > 0.0:
 		ring = maxf(ring - delta, 0.0)
 	cooldown_left -= delta
@@ -90,7 +93,12 @@ func _process(delta: float) -> void:
 			facing = target.map_pos() - position
 			target.apply_damage(damage)
 			cooldown_left = cooldown
-	queue_redraw()
+	if facing.x > 1.0:
+		_sprite.flip_h = false
+	elif facing.x < -1.0:
+		_sprite.flip_h = true
+	if drawing:
+		queue_redraw()
 
 
 func _nearest() -> LaneEnemy:
@@ -107,16 +115,17 @@ func _nearest() -> LaneEnemy:
 	return best
 
 
+func _ensure_art() -> void:
+	if _sprite == null:
+		_sprite = Sprite2D.new()
+		_sprite.name = "Body"
+		_sprite.z_index = 1
+		add_child(_sprite)
+	ArtBank.plant(_sprite, ArtBank.HERO, 46.0)
+	_sprite.position = Vector2(0, 8)
+
+
 func _draw() -> void:
 	if ring > 0.0:
 		var radius := ability_radius * (1.0 - ring / 0.35)
 		draw_arc(Vector2.ZERO, radius, 0, TAU, 40, Color(color, ring * 2.2), 3.0, true)
-	draw_circle(Vector2(0, 4), 13, Color(0, 0, 0, 0.22))
-	draw_colored_polygon(PackedVector2Array([
-		Vector2(0, -16),
-		Vector2(12, 8),
-		Vector2(0, 4),
-		Vector2(-12, 8),
-	]), color)
-	var nose := facing.normalized() * 14.0 if facing.length_squared() > 0.01 else Vector2(14, 0)
-	draw_line(Vector2.ZERO, nose, Color("f2e7c9"), 2.0)

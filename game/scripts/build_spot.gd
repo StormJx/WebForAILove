@@ -6,6 +6,8 @@ signal picked(index: int)
 var index := 0
 var selected := false
 var occupied := false
+var _sprite: Sprite2D
+var _mark: Node2D
 
 
 func setup(spot_index: int) -> void:
@@ -19,16 +21,29 @@ func setup(spot_index: int) -> void:
 	shape.shape = circle
 	area.add_child(shape)
 	add_child(area)
+	_sprite = Sprite2D.new()
+	_sprite.name = "Pad"
+	_sprite.z_index = 0
+	ArtBank.center(_sprite, ArtBank.PAD, 44.0)
+	add_child(_sprite)
+	_mark = Node2D.new()
+	_mark.name = "Mark"
+	_mark.z_index = 1
+	_mark.draw.connect(_draw_mark)
+	add_child(_mark)
+	_tint_pad()
 
 
 func set_selected(is_selected: bool) -> void:
 	selected = is_selected
-	queue_redraw()
+	_tint_pad()
+	_mark.queue_redraw()
 
 
 func set_occupied(is_occupied: bool) -> void:
 	occupied = is_occupied
-	queue_redraw()
+	_tint_pad()
+	_mark.queue_redraw()
 
 
 func _on_input(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
@@ -39,15 +54,19 @@ func _on_input(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
 			picked.emit(index)
 
 
-func _draw() -> void:
-	var fill := Color("efe6cf")
+func _tint_pad() -> void:
+	if _sprite == null:
+		return
 	if selected:
-		fill = Color("f7e7a2")
+		_sprite.modulate = Color("ffe7a8")
 	elif occupied:
-		fill = Color("c9d3b4")
-	draw_circle(Vector2(0, 2), 20, Color(0, 0, 0, 0.18))
-	draw_circle(Vector2.ZERO, 18, fill)
-	draw_arc(Vector2.ZERO, 18, 0, TAU, 24, Color("3e4a38"), 2.0, true)
-	if not occupied:
-		var font := UiStyle.font()
-		draw_string(font, Vector2(-5, 5), str(index + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("3a3328"))
+		_sprite.modulate = Color("d7e0cc")
+	else:
+		_sprite.modulate = Color.WHITE
+
+
+func _draw_mark() -> void:
+	if occupied:
+		return
+	var font := UiStyle.font()
+	_mark.draw_string(font, Vector2(-5, 5), str(index + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("3a3328"))
