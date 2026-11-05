@@ -49,7 +49,7 @@
     "装备页也是海克斯大乱斗，来自 arammayhem.com，补丁 " +
     (buildsMeta ? buildsMeta.patch : "26.21") + "，页面数据日期 " +
     (buildsMeta ? buildsMeta.dataDate : "") +
-    "。出门装、鞋子、核心各按登场率从高到低最多列 3 套。Mayhem:Meta 没有购买顺序，所以装备不从那边取。不是国服。";
+    "。出门装、鞋子、核心各按登场率从高到低最多列 3 套。技能加点分开写 arammayhem.com 和 OP.GG，不合成一套。Mayhem:Meta 没有购买顺序，所以装备不从那边取。不是国服。";
 
   const ageDays = (Date.now() - Date.parse(data.meta.fetchedAt + "T00:00:00Z")) / 86400000;
   if (ageDays > data.meta.staleAfterDays) {
@@ -126,7 +126,12 @@
         renderBuild(champ);
         return;
       }
-      hintEl.textContent = champ.title + " · " + champ.given + " 整体胜率 " + rateText(champ) + "，" + window.HEX_MATCH.label(band) + "。下面是海克斯胜率前 " + rows.length + "。";
+      if (pane === "skills") {
+        hintEl.textContent = champ.title + " · " + champ.given + " 的加点。两套分开列，不合成。";
+        renderSkills(champ);
+        return;
+      }
+      hintEl.textContent = champ.title + " · " + champ.given + " 整体胜率 " + rateText(champ) + "，" + window.HEX_MATCH.label(band) + "。下面是海克斯胜率前 " + rows.length + "。不足 100 场会标出来。";
       current = rows;
       renderRows(rows, false);
       return;
@@ -230,14 +235,59 @@
       listEl.innerHTML = '<div class="empty-state"><strong>这个英雄没有可列出的海克斯</strong><p>来源里没有他在本补丁选过、且写了胜率的海克斯。</p></div>';
       return;
     }
-    listEl.innerHTML = rows.map((row, index) => (
-      '<button type="button" class="card" data-index="' + index + '">' +
-      '<span class="rank">' + (index + 1) + "</span>" +
-      "<span><span class=\"who\">" + esc(showChamp ? row.champ.title + " · " + row.champ.given + " + " + row.augment.zh : row.augment.zh) + "</span>" +
-      '<span class="hex">' + esc(row.augment.rarityZh) + (showChamp ? "" : " · " + esc(row.champ.title)) + "</span></span>" +
-      '<span class="win">' + pct(row.win) + "</span>" +
-      '<span class="games">' + num(row.games) + " 场</span></button>"
-    )).join("");
+    listEl.innerHTML = rows.map((row, index) => {
+      const small = row.games < 100;
+      return '<button type="button" class="card" data-index="' + index + '">' +
+        '<span class="rank">' + (index + 1) + "</span>" +
+        "<span><span class=\"who\">" + esc(showChamp ? row.champ.title + " · " + row.champ.given + " + " + row.augment.zh : row.augment.zh) + "</span>" +
+        '<span class="hex">' + esc(row.augment.rarityZh) + (showChamp ? "" : " · " + esc(row.champ.title)) +
+        (small ? ' · <span class="sample-tag">不足 100 场</span>' : "") + "</span></span>" +
+        '<span class="win">' + pct(row.win) + "</span>" +
+        '<span class="games">' + num(row.games) + " 场</span></button>";
+    }).join("");
+  }
+
+  function renderSkills(champ) {
+    const pack = window.HEX_SKILLS;
+    const row = pack && pack.champions ? pack.champions[champ.key] : null;
+    if (!row || (!row.aram && !row.opgg)) {
+      listEl.innerHTML = '<div class="empty-state"><strong>暂无数据</strong><p>这个英雄没有分开的加点来源。</p></div>';
+      return;
+    }
+    const meta = pack.meta || {};
+    listEl.innerHTML =
+      '<article class="build">' +
+      '<p class="build-warn">技能加点</p>' +
+      '<p class="build-sub">' + esc(meta.note || "") + "</p>" +
+      skillBlock(row.aram, "aram") +
+      skillBlock(row.opgg, "opgg") +
+      "</article>";
+  }
+
+  function skillBlock(block, kind) {
+    if (!block) {
+      return "<h3>来源</h3>" + '<p class="build-sub">来源没有加点。</p>';
+    }
+    const scope = kind === "opgg"
+      ? esc(block.sourceName) + "，补丁 " + esc(block.patch) + "。页面没有登场率或胜率。"
+      : esc(block.sourceName) + "，补丁 " + esc(block.patch) + "，页面数据日期 " + esc(block.dataDate) + "。";
+    let body = "<h3>" + esc(block.sourceName) + "</h3>" + '<p class="build-sub">' + scope + "</p>";
+    if (block.priority) {
+      body += '<p class="set-no">主升</p><p class="starter">' + arrows(block.priority) + "</p>" +
+        '<p class="build-sub">登场率 ' + esc(block.pick) + "，胜率 " + esc(block.win) + "。</p>";
+    }
+    if (block.sequence) {
+      const label = kind === "opgg" ? "逐级顺序" : "登场率最高的逐级顺序";
+      body += '<p class="set-no">' + label + '</p><p class="starter">' + arrows(block.sequence) + "</p>";
+      if (block.sequencePick) {
+        body += '<p class="build-sub">登场率 ' + esc(block.sequencePick) + "，胜率 " + esc(block.sequenceWin) + "。</p>";
+      }
+    }
+    return body;
+  }
+
+  function arrows(order) {
+    return String(order).split(/[\s>]+/).filter(Boolean).map(esc).join(" → ");
   }
 
   function matchChampions(query) {
@@ -296,7 +346,8 @@
       stat("选取率", pct(row.pick)) +
       stat("未选取时对照胜率", pct(row.base)) +
       "</div>" +
-      '<div class="note"><p>选取时胜率 ' + pct(row.win) + "，未选取时 " + pct(row.base) + "，差 " + signed(row.delta) + " 个百分点。</p>" +
+      '<div class="note"><p>选取时胜率 ' + pct(row.win) + "，未选取时 " + pct(row.base) + "，差 " + signed(row.delta) + " 个百分点。" +
+      (row.games < 100 ? " 这一条不足 100 场。" : "") + "</p>" +
       "<p>来源 <a href=\"" + page + "\" target=\"_blank\" rel=\"noreferrer\">" + esc(page) + "</a>。补丁 " +
       data.meta.patch + "，抓取 " + data.meta.fetchedAt + "。" + esc(mapNote) + "</p></div></div>";
     if (!dialog.open) dialog.showModal();

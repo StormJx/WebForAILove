@@ -189,6 +189,7 @@ h1 { font-size: 32px; line-height: 1.15; margin-top: 4px; }
 }
 .who { font-weight: 700; font-size: 16px; }
 .hex { color: var(--muted); font-size: 13px; }
+.sample-tag { color: #8a4b12; font-weight: 750; }
 .win { font-size: 22px; font-variant-numeric: tabular-nums; font-weight: 750; }
 .games { grid-column: 3; color: var(--muted); font-size: 12px; text-align: right; }
 .empty-state {
