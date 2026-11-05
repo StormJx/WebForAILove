@@ -143,7 +143,7 @@ func _process(delta: float) -> void:
 		if drawing:
 			queue_redraw()
 		return
-	var target := _nearest()
+	var target := _furthest()
 	if target == null:
 		_showed = show_range or pulse > 0.0
 		if drawing:
@@ -163,17 +163,18 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
-func _nearest() -> LaneEnemy:
+func _furthest() -> LaneEnemy:
 	var best: LaneEnemy = null
-	var best_dist := range_radius
+	var best_progress := -1.0
 	for node in get_tree().get_nodes_in_group("foes"):
 		var foe := node as LaneEnemy
 		if foe == null or not foe.alive:
 			continue
-		var dist := map_pos().distance_to(foe.map_pos())
-		if dist <= best_dist:
+		if map_pos().distance_to(foe.map_pos()) > range_radius:
+			continue
+		if foe.progress > best_progress:
 			best = foe
-			best_dist = dist
+			best_progress = foe.progress
 	return best
 
 

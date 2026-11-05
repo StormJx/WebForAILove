@@ -88,7 +88,7 @@ func _process(delta: float) -> void:
 		ring = maxf(ring - delta, 0.0)
 	cooldown_left -= delta
 	if cooldown_left <= 0.0:
-		var target := _nearest()
+		var target := _furthest()
 		if target != null:
 			facing = target.map_pos() - position
 			target.apply_damage(damage)
@@ -101,17 +101,18 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 
-func _nearest() -> LaneEnemy:
+func _furthest() -> LaneEnemy:
 	var best: LaneEnemy = null
-	var best_dist := range_radius
+	var best_progress := -1.0
 	for node in get_tree().get_nodes_in_group("foes"):
 		var foe := node as LaneEnemy
 		if foe == null or not foe.alive:
 			continue
-		var dist := position.distance_to(foe.map_pos())
-		if dist <= best_dist:
+		if position.distance_to(foe.map_pos()) > range_radius:
+			continue
+		if foe.progress > best_progress:
 			best = foe
-			best_dist = dist
+			best_progress = foe.progress
 	return best
 
 

@@ -17,7 +17,7 @@ func setup(spot_index: int) -> void:
 	area.input_event.connect(_on_input)
 	var shape := CollisionShape2D.new()
 	var circle := CircleShape2D.new()
-	circle.radius = 26
+	circle.radius = 36
 	shape.shape = circle
 	area.add_child(shape)
 	add_child(area)

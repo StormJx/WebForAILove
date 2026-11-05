@@ -42,6 +42,8 @@ var _next: Button
 var _shop_rows: Dictionary = {}
 var _level_buttons: Array[Button] = []
 var _safe_margins: Array[MarginContainer] = []
+var _top_panel: PanelContainer
+var _bottom_panel: PanelContainer
 
 
 func build(catalog: GameCatalog) -> void:
@@ -84,6 +86,16 @@ func build(catalog: GameCatalog) -> void:
 	_camp.hide()
 	_shop.hide()
 	_result.hide()
+
+
+func chrome_height() -> Vector2:
+	var top_h := 36.0
+	var bottom_h := 112.0
+	if _top_panel != null:
+		top_h = maxf(_top_panel.get_combined_minimum_size().y, 32.0)
+	if _bottom_panel != null:
+		bottom_h = maxf(_bottom_panel.get_combined_minimum_size().y, 96.0)
+	return Vector2(top_h, bottom_h)
 
 
 func apply_insets(left: int, top: int, right: int, bottom: int) -> void:
@@ -164,41 +176,39 @@ func _make_top() -> PanelContainer:
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.add_theme_stylebox_override("panel", UiStyle.flat(Color(0.09, 0.12, 0.1, 0.92), Color(0.35, 0.4, 0.32), 8))
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 12)
+	row.add_theme_constant_override("separation", 10)
 	panel.add_child(row)
-	_lives = _label("生命 0")
-	_wave = _label("营地")
-	_gold = _label("金币 0")
-	_tokens = _label("徽记 0")
-	_status = _label("")
+	_lives = _label("生命 0", 14)
+	_wave = _label("营地", 14)
+	_gold = _label("金币 0", 14)
+	_tokens = _label("徽记 0", 14)
+	_status = _label("", 14)
 	_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_status.clip_text = true
+	_status.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	row.add_child(_lives)
 	row.add_child(_wave)
 	row.add_child(_gold)
 	row.add_child(_tokens)
 	row.add_child(_status)
-	var save := _small_button("保存")
-	var load := _small_button("读取")
 	var shop := _small_button("研究所")
-	save.pressed.connect(func() -> void: save_pressed.emit())
-	load.pressed.connect(func() -> void: load_pressed.emit())
+	shop.custom_minimum_size = Vector2(84, 32)
 	shop.pressed.connect(func() -> void: shop_pressed.emit())
-	row.add_child(save)
-	row.add_child(load)
 	row.add_child(shop)
+	_top_panel = panel
 	return panel
 
 
 func _make_bottom(catalog: GameCatalog) -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	panel.custom_minimum_size = Vector2(0, 156)
-	panel.add_theme_stylebox_override("panel", UiStyle.flat(Color(0.09, 0.12, 0.1, 0.94), Color(0.55, 0.48, 0.28), 12))
+	panel.add_theme_stylebox_override("panel", UiStyle.tight(Color(0.09, 0.12, 0.1, 0.94), Color(0.55, 0.48, 0.28), 10))
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
+	box.add_theme_constant_override("separation", 4)
 	panel.add_child(box)
-	_hint = _label("点圆垫建造，点空地移动巡岸卫。")
-	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_hint = _label("点圆垫，再点下方造塔。", 13)
+	_hint.clip_text = true
+	_hint.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	box.add_child(_hint)
 	var towers := HBoxContainer.new()
 	towers.add_theme_constant_override("separation", 6)
@@ -213,17 +223,20 @@ func _make_bottom(catalog: GameCatalog) -> PanelContainer:
 		UiStyle.style_button(button, colors.get(key, Color("3e5346")))
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var tower_key := str(key)
+		_thumb(button)
 		button.pressed.connect(func() -> void: build_pressed.emit(tower_key))
 		towers.add_child(button)
 		_tower_buttons.append(button)
 	_ability = Button.new()
 	UiStyle.style_button(_ability, Color("2f6f7e"))
 	_ability.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_thumb(_ability)
 	_ability.pressed.connect(func() -> void: ability_pressed.emit())
 	towers.add_child(_ability)
 	_wave_button = Button.new()
 	UiStyle.style_button(_wave_button, Color("3f6b45"))
 	_wave_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_thumb(_wave_button)
 	_wave_button.pressed.connect(func() -> void: wave_pressed.emit())
 	towers.add_child(_wave_button)
 
@@ -235,14 +248,17 @@ func _make_bottom(catalog: GameCatalog) -> PanelContainer:
 		UiStyle.style_button(button, Color("3e5346"))
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var branch_index := branch
+		_thumb(button)
 		button.pressed.connect(func() -> void: upgrade_pressed.emit(branch_index))
 		routes.add_child(button)
 		_branch_buttons.append(button)
 	_sell = Button.new()
 	UiStyle.style_button(_sell, Color("6a3d3d"))
 	_sell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_thumb(_sell)
 	_sell.pressed.connect(func() -> void: sell_pressed.emit())
 	routes.add_child(_sell)
+	_bottom_panel = panel
 	return panel
 
 
@@ -308,7 +324,7 @@ func _make_shop(catalog: GameCatalog) -> Control:
 	var title := _label("研究所", 26)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	panel.add_child(title)
-	var intro := _label("徽记只在清波时增加。买下的等级会写入存档，下一局才生效。本局生命和金币不会被保存。", 14)
+	var intro := _label("徽记只在清波时增加，购买下一局才生效。下面两个按钮只记通关、徽记和购买，不能把这一局的生命和金币存下来重打。", 14)
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	intro.custom_minimum_size = Vector2(420, 0)
 	panel.add_child(intro)
@@ -325,6 +341,18 @@ func _make_shop(catalog: GameCatalog) -> Control:
 		row.add_child(button)
 		panel.add_child(row)
 		_shop_rows[upgrade_id] = {"label": label, "button": button}
+	var keep := HBoxContainer.new()
+	keep.add_theme_constant_override("separation", 8)
+	keep.alignment = BoxContainer.ALIGNMENT_CENTER
+	var write_record := _small_button("只记通关")
+	write_record.custom_minimum_size = Vector2(120, 44)
+	write_record.pressed.connect(func() -> void: save_pressed.emit())
+	var read_record := _small_button("读回记录")
+	read_record.custom_minimum_size = Vector2(120, 44)
+	read_record.pressed.connect(func() -> void: load_pressed.emit())
+	keep.add_child(write_record)
+	keep.add_child(read_record)
+	panel.add_child(keep)
 	var close := _small_button("关闭")
 	close.pressed.connect(func() -> void: shop_closed.emit())
 	panel.add_child(close)
@@ -417,6 +445,20 @@ func _label(text: String, size: int = 16) -> Label:
 	label.text = text
 	UiStyle.style_label(label, size)
 	return label
+
+
+func _thumb(button: Button) -> void:
+	button.custom_minimum_size = Vector2(72, 44)
+	button.add_theme_font_size_override("font_size", 13)
+	for state_name in ["normal", "hover", "pressed", "disabled"]:
+		var box := button.get_theme_stylebox(state_name)
+		if box is StyleBoxFlat:
+			var copy := (box as StyleBoxFlat).duplicate() as StyleBoxFlat
+			copy.content_margin_top = 1
+			copy.content_margin_bottom = 1
+			copy.content_margin_left = 4
+			copy.content_margin_right = 4
+			button.add_theme_stylebox_override(state_name, copy)
 
 
 func _small_button(text: String) -> Button:

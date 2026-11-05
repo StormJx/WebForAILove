@@ -33,8 +33,6 @@ var spawner: WaveSpawner
 var hud: Hud
 var map_view: MapView
 var spot_nodes: Array[BuildSpot] = []
-var _top_bar := 52.0
-var _bottom_bar := 168.0
 
 
 func _ready() -> void:
@@ -254,14 +252,14 @@ func try_ability() -> bool:
 
 func save_progress() -> void:
 	if save.write_file():
-		_set_note("已写入存档。只含研究所和通关，不含本局生命与金币。")
+		_set_note("已记下通关和研究所。这一局的生命和金币不在里面。")
 	else:
 		_set_note("存档失败。")
 
 
 func load_progress() -> void:
 	save = SaveStore.load_file()
-	_set_note("已读入存档。本局生命和金币保持不变，研究所在下一局生效。")
+	_set_note("已读回记录。这一局的生命和金币不变，研究所下一局生效。")
 
 
 func buy_meta(upgrade_id: String) -> void:
@@ -408,10 +406,11 @@ func _layout() -> void:
 	var insets := _safe_insets(viewport_size)
 	if hud:
 		hud.apply_insets(int(insets.x), int(insets.y), int(insets.z), int(insets.w))
-	var area_pos := Vector2(insets.x, insets.y + _top_bar)
+	var chrome := hud.chrome_height() if hud != null else Vector2(36, 112)
+	var area_pos := Vector2(insets.x, insets.y + chrome.x)
 	var area_size := Vector2(
 		viewport_size.x - insets.x - insets.z,
-		viewport_size.y - insets.y - insets.w - _top_bar - _bottom_bar
+		viewport_size.y - insets.y - insets.w - chrome.x - chrome.y
 	)
 	area_size.x = maxf(area_size.x, 40.0)
 	area_size.y = maxf(area_size.y, 40.0)

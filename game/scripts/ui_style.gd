@@ -24,15 +24,23 @@ static func font() -> Font:
 
 
 static func flat(bg: Color, border: Color, radius: int = 10) -> StyleBoxFlat:
+	return _box(bg, border, radius, 8, 4)
+
+
+static func tight(bg: Color, border: Color, radius: int = 10) -> StyleBoxFlat:
+	return _box(bg, border, radius, 6, 2)
+
+
+static func _box(bg: Color, border: Color, radius: int, margin_x: int, margin_y: int) -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()
 	box.bg_color = bg
 	box.border_color = border
 	box.set_border_width_all(1)
 	box.set_corner_radius_all(radius)
-	box.content_margin_left = 8
-	box.content_margin_right = 8
-	box.content_margin_top = 4
-	box.content_margin_bottom = 4
+	box.content_margin_left = margin_x
+	box.content_margin_right = margin_x
+	box.content_margin_top = margin_y
+	box.content_margin_bottom = margin_y
 	return box
 
 

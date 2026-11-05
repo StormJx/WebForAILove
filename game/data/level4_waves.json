@@ -6,7 +6,7 @@
     "shell": {"name": "壳卒", "hp": 190, "speed": 42, "gold": 14, "radius": 17, "color": "#8d6b45", "leak": 1},
     "runner": {"name": "疾足", "hp": 36, "speed": 125, "gold": 9, "radius": 12, "color": "#d6c15a", "leak": 1},
     "tide": {"name": "潮卒", "hp": 90, "speed": 78, "gold": 11, "radius": 15, "color": "#4d6e8a", "leak": 2},
-    "boss": {"name": "渠魁", "hp": 1200, "speed": 48, "gold": 56, "radius": 22, "color": "#8c4a4a", "leak": 6}
+    "boss": {"name": "渠魁", "hp": 1200, "speed": 48, "gold": 56, "radius": 22, "color": "#8c4a4a", "leak": 4}
   },
   "waves": [
     {

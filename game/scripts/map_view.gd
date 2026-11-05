@@ -18,6 +18,12 @@ const _PROP_SETS: Array = [
 	["cairn", "reed", "cairn", "stake"],
 	["lantern", "reed", "lantern", "cairn"],
 ]
+const _BANK := [
+	Color("8c9a3c"),
+	Color("1e756f"),
+	Color("9a7438"),
+	Color("1a2c44"),
+]
 
 
 func setup(catalog: GameCatalog, text_font: Font) -> void:
@@ -74,24 +80,24 @@ func _distance_to_segment(point: Vector2, a: Vector2, b: Vector2) -> float:
 	return point.distance_to(a.lerp(b, t))
 
 
+func _bank() -> Color:
+	return _BANK[clampi(_stage, 0, _BANK.size() - 1)]
+
+
 func _tone() -> Color:
-	match _stage:
-		1:
-			return Color(0.72, 0.9, 0.8)
-		2:
-			return Color(0.95, 0.9, 0.68)
-		3:
-			return Color(0.55, 0.64, 0.78)
-		_:
-			return Color(0.78, 0.86, 0.74)
+	var bank := _bank()
+	return Color(bank.r * 0.72 + 0.18, bank.g * 0.72 + 0.2, bank.b * 0.72 + 0.16)
 
 
 func _lay_water() -> void:
 	if path.size() < 2:
 		return
 	var tex := ArtBank.WATER
-	var piece := 52.0
-	var thick := 42.0
+	var thick := 34.0
+	var tex_w := maxf(float(tex.get_width()), 1.0)
+	var tex_h := maxf(float(tex.get_height()), 1.0)
+	var sy := thick / tex_h
+	var tile_w := tex_w * sy
 	for i in path.size() - 1:
 		var a: Vector2 = path[i]
 		var b: Vector2 = path[i + 1]
@@ -99,15 +105,19 @@ func _lay_water() -> void:
 		var length := delta.length()
 		if length < 1.0:
 			continue
-		var steps := maxi(int(ceil(length / (piece * 0.8))), 1)
+		var inset := minf(thick * 0.42, length * 0.2)
+		var span := maxf(length - inset * 2.0, length * 0.5)
+		var steps := maxi(int(ceil(span / tile_w)), 1)
+		var step_len := span / float(steps)
 		for s in steps:
+			var along := inset + step_len * (float(s) + 0.5)
 			var sprite := Sprite2D.new()
 			sprite.texture = tex
 			sprite.centered = true
 			sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-			sprite.position = a.lerp(b, (float(s) + 0.5) / float(steps))
+			sprite.position = a.lerp(b, along / length)
 			sprite.rotation = delta.angle()
-			sprite.scale = Vector2((length / float(steps)) * 1.12 / float(tex.get_width()), thick / float(tex.get_height()))
+			sprite.scale = Vector2(step_len / tex_w, sy)
 			sprite.modulate = _tone()
 			sprite.z_index = 0
 			add_child(sprite)
@@ -150,16 +160,17 @@ func _stand(at: Vector2, key: String, height: float, flip: bool) -> void:
 
 
 func _draw() -> void:
-	var soil := ground.darkened(0.16 if ground.get_luminance() < 0.2 else 0.32)
+	var soil := _bank()
 	var tile := 120.0
+	var ink := Color(soil.r * 0.5, soil.g * 0.5, soil.b * 0.5, 1.0)
 	var y := 0.0
 	while y < map_size.y:
 		var x := 0.0
 		while x < map_size.x:
-			draw_texture_rect(ArtBank.GROUND, Rect2(x, y, tile, tile), false, Color(0.62, 0.64, 0.52, 1.0))
+			draw_texture_rect(ArtBank.GROUND, Rect2(x, y, tile, tile), false, ink)
 			x += tile - 1.0
 		y += tile - 1.0
-	draw_rect(Rect2(Vector2.ZERO, map_size), Color(soil, 0.55))
+	draw_rect(Rect2(Vector2.ZERO, map_size), Color(soil, 0.58))
 	draw_rect(Rect2(Vector2.ZERO, map_size), Color("1a241c"), false, 3.0)
 	if _labels:
 		_labels.queue_redraw()
