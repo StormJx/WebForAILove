@@ -19,10 +19,10 @@ const _PROP_SETS: Array = [
 	["lantern", "reed", "lantern", "cairn"],
 ]
 const _BANK := [
-	Color("8c9a3c"),
-	Color("1e756f"),
-	Color("9a7438"),
-	Color("1a2c44"),
+	Color("9edc2e"),
+	Color("12c8b4"),
+	Color("e8921a"),
+	Color("1e3e9e"),
 ]
 
 
@@ -84,9 +84,14 @@ func _bank() -> Color:
 	return _BANK[clampi(_stage, 0, _BANK.size() - 1)]
 
 
-func _tone() -> Color:
+func _water_tint() -> Color:
 	var bank := _bank()
-	return Color(bank.r * 0.72 + 0.18, bank.g * 0.72 + 0.2, bank.b * 0.72 + 0.16)
+	return Color(lerpf(0.95, bank.r, 0.62), lerpf(0.98, bank.g, 0.62), lerpf(1.0, bank.b, 0.62))
+
+
+func _prop_tint() -> Color:
+	var bank := _bank()
+	return Color(lerpf(1.0, bank.r, 0.18), lerpf(1.0, bank.g, 0.18), lerpf(1.0, bank.b, 0.18))
 
 
 func _lay_water() -> void:
@@ -118,7 +123,7 @@ func _lay_water() -> void:
 			sprite.position = a.lerp(b, along / length)
 			sprite.rotation = delta.angle()
 			sprite.scale = Vector2(step_len / tex_w, sy)
-			sprite.modulate = _tone()
+			sprite.modulate = _water_tint()
 			sprite.z_index = 0
 			add_child(sprite)
 
@@ -154,7 +159,7 @@ func _stand(at: Vector2, key: String, height: float, flip: bool) -> void:
 	ArtBank.plant(sprite, ArtBank.prop_texture(key), height)
 	sprite.position = at
 	sprite.flip_h = flip
-	sprite.modulate = _tone().darkened(0.08)
+	sprite.modulate = _prop_tint()
 	sprite.z_index = 1
 	add_child(sprite)
 
@@ -162,16 +167,15 @@ func _stand(at: Vector2, key: String, height: float, flip: bool) -> void:
 func _draw() -> void:
 	var soil := _bank()
 	var tile := 120.0
-	var ink := Color(soil.r * 0.5, soil.g * 0.5, soil.b * 0.5, 1.0)
 	var y := 0.0
 	while y < map_size.y:
 		var x := 0.0
 		while x < map_size.x:
-			draw_texture_rect(ArtBank.GROUND, Rect2(x, y, tile, tile), false, ink)
+			draw_texture_rect(ArtBank.GROUND, Rect2(x, y, tile, tile), false, soil)
 			x += tile - 1.0
 		y += tile - 1.0
-	draw_rect(Rect2(Vector2.ZERO, map_size), Color(soil, 0.58))
-	draw_rect(Rect2(Vector2.ZERO, map_size), Color("1a241c"), false, 3.0)
+	draw_rect(Rect2(Vector2.ZERO, map_size), Color(soil, 0.22))
+	draw_rect(Rect2(Vector2.ZERO, map_size), Color("121614"), false, 3.0)
 	if _labels:
 		_labels.queue_redraw()
 
