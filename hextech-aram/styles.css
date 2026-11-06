@@ -190,6 +190,19 @@ h1 { font-size: 32px; line-height: 1.15; margin-top: 4px; }
 .who { font-weight: 700; font-size: 16px; }
 .hex { color: var(--muted); font-size: 13px; }
 .sample-tag { color: #8a4b12; font-weight: 750; }
+.delta { display: block; margin-top: 2px; color: #3d5c45; font-size: 12px; font-variant-numeric: tabular-nums; }
+.filters { display: grid; gap: 8px; margin-bottom: 8px; }
+.filter-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  min-height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 4px 12px;
+  font-weight: 700;
+}
+.chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.filter-note { margin: 0; color: var(--muted); font-size: 12px; }
 .win { font-size: 22px; font-variant-numeric: tabular-nums; font-weight: 750; }
 .games { grid-column: 3; color: var(--muted); font-size: 12px; text-align: right; }
 .empty-state {

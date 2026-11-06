@@ -62,6 +62,9 @@
   let pickedKey = "";
   let current = [];
   let pane = "hex";
+  let hexSort = "win";
+  let hexRarity = "all";
+  let hexSample = "all";
 
   tabsEl.addEventListener("click", (event) => {
     const button = event.target.closest("button.tab");
@@ -81,6 +84,16 @@
     render();
   });
   listEl.addEventListener("click", (event) => {
+    const sort = event.target.closest("[data-hex-sort]");
+    const rarity = event.target.closest("[data-hex-rarity]");
+    const sample = event.target.closest("[data-hex-sample]");
+    if (sort || rarity || sample) {
+      if (sort) hexSort = sort.dataset.hexSort;
+      if (rarity) hexRarity = rarity.dataset.hexRarity;
+      if (sample) hexSample = sample.dataset.hexSample;
+      render();
+      return;
+    }
     const card = event.target.closest(".card");
     if (!card) return;
     openDetail(current[Number(card.dataset.index)]);
@@ -112,7 +125,7 @@
 
     const champ = champHits.length === 1 ? champHits[0] : champs[pickedKey];
     if (champ && champHits.some((item) => item.key === champ.key)) {
-      const rows = (byChamp[champ.key] || []).slice(0, 10);
+      const rows = takeHex(byChamp[champ.key] || []);
       const band = window.HEX_MATCH.band(champ);
       picksEl.innerHTML = (champHits.length > 1
         ? '<button type="button" class="pick" data-key=""><b>换一个英雄</b><span>' + champHits.length + " 个对上简称</span></button>"
@@ -131,9 +144,9 @@
         renderSkills(champ);
         return;
       }
-      hintEl.textContent = champ.title + " · " + champ.given + " 整体胜率 " + rateText(champ) + "，" + window.HEX_MATCH.label(band) + "。下面是海克斯胜率前 " + rows.length + "。不足 100 场会标出来。";
+      hintEl.textContent = champ.title + " · " + champ.given + " 整体胜率 " + rateText(champ) + "，" + window.HEX_MATCH.label(band) + "。下面按" + sortLabel() + "留前 " + rows.length + "。不足 100 场会标出来。";
       current = rows;
-      renderRows(rows, false);
+      renderRows(rows, false, true);
       return;
     }
 
@@ -149,12 +162,11 @@
           merged.push(row);
         });
       });
-      sortByWin(merged);
-      const rows = merged.slice(0, 10);
+      const rows = takeHex(merged);
       const names = hexHits.slice(0, 3).map((augment) => augment.zh).join("、");
-      hintEl.textContent = "海克斯对上 " + names + (hexHits.length > 3 ? " 等" : "") + "，胜率前 " + rows.length + " 条。";
+      hintEl.textContent = "海克斯对上 " + names + (hexHits.length > 3 ? " 等" : "") + "，按" + sortLabel() + "留前 " + rows.length + " 条。";
       current = rows;
-      renderRows(rows, true);
+      renderRows(rows, true, true);
       return;
     }
 
@@ -230,18 +242,63 @@
       '" width="48" height="48"><span class="item-name">' + esc(name) + "</span></span>";
   }
 
-  function renderRows(rows, showChamp) {
+  function takeHex(rows) {
+    const list = rows.filter((row) => {
+      if (hexRarity !== "all" && row.augment.rarityZh !== hexRarity) return false;
+      if (hexSample === "100" && row.games < 100) return false;
+      return true;
+    });
+    list.sort(compareHex);
+    return list.slice(0, 10);
+  }
+
+  function compareHex(a, b) {
+    if (hexSort === "games") return b.games - a.games || b.win - a.win;
+    if (hexSort === "delta") return (b.delta - a.delta) || b.games - a.games;
+    return b.win - a.win || b.games - a.games;
+  }
+
+  function sortLabel() {
+    if (hexSort === "games") return "场次";
+    if (hexSort === "delta") return "相对未选取";
+    return "胜率";
+  }
+
+  function hexTools() {
+    const sorts = [["win", "胜率"], ["delta", "相对未选取"], ["games", "场次"]];
+    const rarities = [["all", "稀有度不限"], ["棱彩阶", "棱彩"], ["黄金阶", "黄金"], ["白银阶", "白银"]];
+    const samples = [["all", "场次不限"], ["100", "至少 100 场"]];
+    return '<div class="filters">' +
+      chipRow("hex-sort", sorts, hexSort) +
+      chipRow("hex-rarity", rarities, hexRarity) +
+      chipRow("hex-sample", samples, hexSample) +
+      '<p class="filter-note">相对未选取来自 Mayhem:Meta：选取时胜率减去未选取时的对照胜率。页面不计算 Hexdata 的 HexScore，也不估算海斗分。</p></div>';
+  }
+
+  function chipRow(attr, items, current) {
+    return '<div class="filter-row">' + items.map(function (item) {
+      const on = item[0] === current ? " on" : "";
+      return '<button type="button" class="chip' + on + '" data-' + attr + '="' + esc(item[0]) + '">' + item[1] + "</button>";
+    }).join("") + "</div>";
+  }
+
+  function renderRows(rows, showChamp, withTools) {
+    const tools = withTools ? hexTools() : "";
     if (!rows.length) {
-      listEl.innerHTML = '<div class="empty-state"><strong>这个英雄没有可列出的海克斯</strong><p>来源里没有他在本补丁选过、且写了胜率的海克斯。</p></div>';
+      listEl.innerHTML = tools + '<div class="empty-state"><strong>这个筛选下没有海克斯</strong><p>来源里没有同时满足稀有度、场次，并且写了胜率的搭配。换一个筛选再看。</p></div>';
       return;
     }
-    listEl.innerHTML = rows.map((row, index) => {
+    listEl.innerHTML = tools + rows.map((row, index) => {
       const small = row.games < 100;
+      const delta = Number.isFinite(row.delta)
+        ? '<span class="delta">相对未选取 ' + signed(row.delta) + " 个百分点</span>"
+        : "";
       return '<button type="button" class="card" data-index="' + index + '">' +
         '<span class="rank">' + (index + 1) + "</span>" +
         "<span><span class=\"who\">" + esc(showChamp ? row.champ.title + " · " + row.champ.given + " + " + row.augment.zh : row.augment.zh) + "</span>" +
         '<span class="hex">' + esc(row.augment.rarityZh) + (showChamp ? "" : " · " + esc(row.champ.title)) +
-        (small ? ' · <span class="sample-tag">不足 100 场</span>' : "") + "</span></span>" +
+        (small ? ' · <span class="sample-tag">不足 100 场</span>' : "") + "</span>" +
+        delta + "</span>" +
         '<span class="win">' + pct(row.win) + "</span>" +
         '<span class="games">' + num(row.games) + " 场</span></button>";
     }).join("");
