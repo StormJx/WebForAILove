@@ -140,7 +140,7 @@ func _scripted_turn(main, plan: Array) -> void:
 	for tower in main.built:
 		if tower != null:
 			towers += 1
-	if main.wave_resolved and not main.spawner.busy and (main.launched > 0 or towers >= 2):
+	if main.wave_resolved and not main.spawner.busy and (main.launched > 0 or towers >= 1):
 		main.try_wave()
 
 

@@ -2,7 +2,7 @@ class_name LaneEnemy
 extends PathFollow2D
 
 signal killed(gold_value: int)
-signal leaked(lives_lost: int)
+signal leaked(lives_lost: int, foe_name: String)
 
 var foe_name := ""
 var max_hp := 1.0
@@ -120,7 +120,7 @@ func _leak() -> void:
 	alive = false
 	if is_in_group("foes"):
 		remove_from_group("foes")
-	leaked.emit(leak_lives)
+	leaked.emit(leak_lives, foe_name)
 	queue_free()
 
 

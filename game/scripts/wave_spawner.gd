@@ -2,7 +2,7 @@ class_name WaveSpawner
 extends Node
 
 signal foe_killed(gold_value: int)
-signal foe_leaked(lives_lost: int)
+signal foe_leaked(lives_lost: int, foe_name: String)
 
 var catalog: GameCatalog
 var path: Path2D
@@ -54,5 +54,5 @@ func _spawn(foe_id: String) -> void:
 	var foe := enemy_scene.instantiate() as LaneEnemy
 	foe.setup(stats)
 	foe.killed.connect(func(gold_value: int) -> void: foe_killed.emit(gold_value))
-	foe.leaked.connect(func(lives_lost: int) -> void: foe_leaked.emit(lives_lost))
+	foe.leaked.connect(func(lives_lost: int, foe_name: String) -> void: foe_leaked.emit(lives_lost, foe_name))
 	path.add_child(foe)

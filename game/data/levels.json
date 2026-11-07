@@ -17,7 +17,7 @@
     {
       "id": "narrow_bank",
       "name": "狭岸连潮",
-      "blurb": "折角收在岸内，塔能盖住的弯比第一关短。敌人更快，开局生命和金币更少。",
+      "blurb": "折角收在岸内，塔能盖住的弯比第一关短。敌人更快，开局生命更少。",
       "map": "level3_map.json",
       "waves": "level3_waves.json"
     },

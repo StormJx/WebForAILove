@@ -64,8 +64,6 @@ func _impact(foe: LaneEnemy) -> void:
 				continue
 			if other.map_pos().distance_to(center) <= splash + other.radius:
 				other.apply_damage(damage)
-				if burn_dps > 0.0:
-					other.apply_burn(burn_dps, burn_time)
 	queue_free()
 
 

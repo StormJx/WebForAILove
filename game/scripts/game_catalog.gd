@@ -158,7 +158,7 @@ func validate() -> PackedStringArray:
 		var first_spots: PackedVector2Array = first["spots"]
 		if first_path.is_empty() or first_path[0] != Vector2(20, 64) or first_spots.size() != 6:
 			errors.append("level 1 path or build spots changed")
-		if int(first["rules"]["lives"]) != 20 or int(first["rules"]["gold"]) != 175:
+		if int(first["rules"]["lives"]) != 20 or int(first["rules"]["gold"]) != 90:
 			errors.append("level 1 starting lives or gold changed")
 		var first_waves: Array = first["waves"]
 		if first_waves.size() > 0:

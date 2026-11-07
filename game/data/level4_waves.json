@@ -1,6 +1,6 @@
 {
   "lives": 14,
-  "gold": 150,
+  "gold": 90,
   "enemies": {
     "raider": {"name": "芦寇", "hp": 58, "speed": 70, "gold": 7, "radius": 14, "color": "#6d8f55", "leak": 1},
     "shell": {"name": "壳卒", "hp": 190, "speed": 42, "gold": 14, "radius": 17, "color": "#8d6b45", "leak": 1},
@@ -10,11 +10,11 @@
   },
   "waves": [
     {
-      "reward": 65,
+      "reward": 12,
       "tokens": 8,
       "groups": [
         {"id": "raider", "count": 8, "gap": 0.5},
-        {"id": "tide", "count": 4, "gap": 0.65}
+        {"id": "tide", "count": 2, "gap": 0.65}
       ]
     },
     {

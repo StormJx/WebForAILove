@@ -56,21 +56,67 @@ func branch_info(index: int) -> Dictionary:
 	if not locked and not done:
 		var next_level := branch_level if branch_index == index else 0
 		cost = int(levels[next_level]["cost"])
+	var effect := ""
 	var label := str(branch["name"])
 	if locked:
 		label = "%s\n锁定" % branch["name"]
 	elif done:
 		label = "%s\n已满" % branch["name"]
 	else:
-		label = "%s\n%d" % [branch["name"], cost]
+		var next_level := branch_level if branch_index == index else 0
+		effect = _effect_text(levels[next_level])
+		label = "%s\n%s %d" % [branch["name"], effect, cost]
 	return {
 		"text": label,
 		"cost": cost,
+		"effect": effect,
 		"locked": locked,
 		"done": done,
 		"blurb": str(branch.get("blurb", "")),
 		"name": str(branch["name"]),
 	}
+
+
+func _effect_text(level: Dictionary) -> String:
+	var parts: PackedStringArray = []
+	if int(level.get("damage_add", 0)) != 0:
+		parts.append("+%d伤" % int(level["damage_add"]))
+	if level.has("cooldown_mul"):
+		var cut := int(round((1.0 - float(level["cooldown_mul"])) * 100.0))
+		parts.append("间隔-%d%%" % cut)
+	if level.has("slow_add"):
+		var slower := int(round(-float(level["slow_add"]) * 100.0))
+		parts.append("再慢%d%%" % slower)
+	if level.has("range_add"):
+		parts.append("范围+%d" % int(level["range_add"]))
+	if float(level.get("slow_time_add", 0)) > 0.0:
+		parts.append("减速+%s秒" % _trim_num(float(level["slow_time_add"])))
+	if level.has("splash_add"):
+		parts.append("爆炸+%d" % int(level["splash_add"]))
+	if float(level.get("burn_dps", 0)) > 0.0:
+		var adding := branch_level > 0
+		if adding:
+			parts.append("灼烧+%d/秒" % int(level["burn_dps"]))
+		else:
+			parts.append("灼烧%d/秒" % int(level["burn_dps"]))
+		if float(level.get("burn_time", 0)) > 0.0:
+			var prefix := "+" if adding else ""
+			parts.append("%s%s秒" % [prefix, _trim_num(float(level["burn_time"]))])
+		parts.append("只烧1个")
+	elif float(level.get("burn_time", 0)) > 0.0:
+		parts.append("灼烧+%s秒" % _trim_num(float(level["burn_time"])))
+	return " ".join(parts)
+
+
+func _trim_num(value: float) -> String:
+	if is_equal_approx(value, round(value)):
+		return str(int(round(value)))
+	var text := "%.2f" % value
+	while text.ends_with("0"):
+		text = text.left(text.length() - 1)
+	if text.ends_with("."):
+		text = text.left(text.length() - 1)
+	return text
 
 
 func apply_branch(index: int) -> void:

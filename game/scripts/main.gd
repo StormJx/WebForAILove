@@ -24,6 +24,7 @@ var shop_open := false
 var note := ""
 var note_left := 0.0
 var tokens_earned := 0
+var _leaks: Array[Dictionary] = []
 
 var world: Node2D
 var path: Path2D
@@ -103,6 +104,7 @@ func start_battle() -> void:
 	result_win = false
 	shop_open = false
 	tokens_earned = 0
+	_leaks.clear()
 	hero.place(catalog.hero_start, catalog.hero, float(bonus["hero_damage"]))
 	state = STATE_BATTLE
 	get_tree().paused = false
@@ -199,7 +201,7 @@ func try_upgrade(branch: int) -> bool:
 		return false
 	gold -= int(info["cost"])
 	tower.apply_branch(branch)
-	_set_note("升级：%s。" % info["name"])
+	_set_note("升级：%s，%s。" % [info["name"], info["effect"]])
 	return true
 
 
@@ -458,11 +460,17 @@ func _check_outcome() -> void:
 	tokens_earned += gain
 	save.write_file()
 	wave_resolved = true
+	var leaked_text := _leak_summary(launched)
 	if launched >= catalog.waves.size():
-		_set_note("第五波也拦住了。")
+		if leaked_text == "":
+			_set_note("第五波也拦住了。")
+		else:
+			_set_note("第五波也拦住了。%s。" % leaked_text)
 		_finish(true)
-	else:
+	elif leaked_text == "":
 		_set_note("第 %d 波已被拦住，金币 +%d，徽记 +%d。" % [launched, int(wave["reward"]), gain])
+	else:
+		_set_note("第 %d 波已过，金币 +%d，徽记 +%d。%s。" % [launched, int(wave["reward"]), gain, leaked_text])
 
 
 func _finish(win: bool) -> void:
@@ -488,11 +496,13 @@ func _on_killed(gold_value: int) -> void:
 	gold += gold_value
 
 
-func _on_leaked(lives_lost: int) -> void:
+func _on_leaked(lives_lost: int, foe_name: String) -> void:
 	if state != STATE_BATTLE:
 		return
 	lives = maxi(lives - lives_lost, 0)
-	_set_note("有人漏过了水闸。")
+	var wave_no := maxi(launched, 1)
+	_leaks.append({"wave": wave_no, "name": foe_name, "lives": lives_lost})
+	_set_note("第 %d 波，%s漏过，生命 -%d。" % [wave_no, foe_name, lives_lost])
 	if lives <= 0:
 		_finish(false)
 
@@ -664,6 +674,40 @@ func _camp_text() -> String:
 	return "%s\n守住五波，并且还有生命，才算赢。石弩、霜坛、焰壶各有两条升级路线，一座塔只能选一条。\n巡岸卫会自己攻击。点空地让他换位置。%s。徽记 %d。本关开局加成：金币 +%d，生命 +%d。\n键位：1/2/3 造塔，Q/E 升级，R 出售，F 断流，空格出波。" % [catalog.stage_blurb, clear_text, save.tokens, int(bonus["gold"]), int(bonus["lives"])]
 
 
+func _leak_summary(wave_no: int) -> String:
+	var counts := {}
+	var order: Array[String] = []
+	var total := 0
+	for entry in _leaks:
+		if int(entry["wave"]) != wave_no:
+			continue
+		var foe_name := str(entry["name"])
+		if not counts.has(foe_name):
+			counts[foe_name] = 0
+			order.append(foe_name)
+		counts[foe_name] += int(entry["lives"])
+		total += int(entry["lives"])
+	if order.is_empty():
+		return ""
+	var parts: PackedStringArray = []
+	for foe_name in order:
+		parts.append("%s漏过，扣 %d 条命" % [foe_name, int(counts[foe_name])])
+	var text := "；".join(parts)
+	if order.size() > 1:
+		text += "。本波共扣 %d 条命" % total
+	return text
+
+
+func _loss_reason() -> String:
+	var wave_no := maxi(launched, 1)
+	if not _leaks.is_empty():
+		wave_no = int(_leaks[_leaks.size() - 1]["wave"])
+	var summary := _leak_summary(wave_no)
+	if summary == "":
+		return "第 %d 波失守。" % wave_no
+	return "第 %d 波失守。%s。" % [wave_no, summary]
+
+
 func _result_text() -> String:
 	if result_win:
 		var extra := "回到选关可以继续。"
@@ -672,7 +716,7 @@ func _result_text() -> String:
 		elif save.is_unlocked(catalog.stage_index + 1, catalog.stage_ids()):
 			extra = "下一关已经打开。"
 		return "五波都拦住了。这一局得到徽记 %d。%s通关记录已写入存档。再守一次会重算生命和金币。" % [tokens_earned, extra]
-	return "生命耗尽。这一局得到徽记 %d。已通关的关和研究所还在；本局金币不会留下。" % tokens_earned
+	return "生命耗尽。%s这一局得到徽记 %d。已通关的关和研究所还在；本局金币不会留下。" % [_loss_reason(), tokens_earned]
 
 
 func _level_rows() -> Array:
